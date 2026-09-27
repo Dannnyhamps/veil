@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { VeilMark } from '@/components/ui/VeilMark'
 import { bufferToHex, hexToUint8Array } from '@veil/utils'
-import { matchWebAuthnSigner } from '@veil/sdk'
+import { matchWebAuthnSigner } from '@veil/sdk/recovery/signerVerification'
 import { ensureFeePayer, resetFeePayer } from '@/lib/feePayer'
 import { getNetwork } from '@/lib/network'
 import {

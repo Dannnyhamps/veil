@@ -1,13 +1,15 @@
+import {
+    Account,
+    BASE_FEE,
+    Contract,
+    Keypair,
+    StrKey,
+    TransactionBuilder,
+    rpc as SorobanRpc,
+} from '@stellar/stellar-sdk';
 import { derToRawSignature, bufferToHex, hexToUint8Array } from '../utils';
 
 export type RegisteredSigner = Uint8Array | string;
-
-export const RECOVERY_SIGNER_CASES = [
-    { name: 'registered signer', signers: ['04' + '11'.repeat(64)], candidate: '04' + '11'.repeat(64), accepted: true },
-    { name: 'registered signer with different casing', signers: [('04' + '11'.repeat(64)).toUpperCase()], candidate: '04' + '11'.repeat(64), accepted: true },
-    { name: 'unregistered signer', signers: ['04' + '11'.repeat(64)], candidate: '04' + '22'.repeat(64), accepted: false },
-    { name: 'empty signer set', signers: [], candidate: '04' + '11'.repeat(64), accepted: false },
-] as const;
 
 function signerBytes(value: RegisteredSigner): Uint8Array {
     if (value instanceof Uint8Array) return value;
@@ -74,4 +76,112 @@ export async function matchWebAuthnSigner(
         }
     }
     return null;
+}
+
+export class InvalidWalletAddressError extends Error {
+    constructor() {
+        super('Enter a valid Stellar contract wallet address.');
+        this.name = 'InvalidWalletAddressError';
+    }
+}
+
+export class WalletContractNotFoundError extends Error {
+    constructor(readonly address: string) {
+        super('This wallet is not deployed on the selected network.');
+        this.name = 'WalletContractNotFoundError';
+    }
+}
+
+export class WalletRecoveryNetworkError extends Error {
+    readonly cause?: unknown;
+
+    constructor(readonly address: string, cause?: unknown) {
+        super('Could not reach the selected network. Check your connection and try again.');
+        this.name = 'WalletRecoveryNetworkError';
+        this.cause = cause;
+    }
+}
+
+export class PasskeyNotRegisteredError extends Error {
+    constructor() {
+        super('This passkey is not a registered signer on that wallet.');
+        this.name = 'PasskeyNotRegisteredError';
+    }
+}
+
+export class NotVeilWalletError extends Error {
+    constructor() {
+        super('This deployed contract is not a Veil wallet or has no registered signers.');
+        this.name = 'NotVeilWalletError';
+    }
+}
+
+export type AddressRecoveryDependencies = {
+    resolveSigners?: (address: string) => Promise<RegisteredSigner[]>;
+    rpcUrl?: string;
+    networkPassphrase?: string;
+    authenticate: (signers: RegisteredSigner[]) => Promise<string | null>;
+};
+
+/** Simulate get_signers and parse its XDR map without relying on SDK hook state. */
+export async function resolveWalletSigners(
+    address: string,
+    rpcUrl: string,
+    networkPassphrase: string,
+): Promise<Uint8Array[]> {
+    const source = new Account(Keypair.random().publicKey(), '0');
+    const transaction = new TransactionBuilder(source, { fee: BASE_FEE, networkPassphrase })
+        .addOperation(new Contract(address).call('get_signers'))
+        .setTimeout(30)
+        .build();
+    const simulation = await new SorobanRpc.Server(rpcUrl).simulateTransaction(transaction);
+    if (SorobanRpc.Api.isSimulationError(simulation)) {
+        if (/not found|not_found|contract instance|missingvalue|missing value/i.test(simulation.error)) {
+            throw new WalletContractNotFoundError(address);
+        }
+        if (/network|fetch|timeout|timed out|connection|\b429\b|\b5\d\d\b|gateway|temporarily unavailable/i.test(simulation.error)) {
+            throw new WalletRecoveryNetworkError(address);
+        }
+        throw new NotVeilWalletError();
+    }
+
+    const retval = simulation.result?.retval;
+    if (!retval) throw new NotVeilWalletError();
+    try {
+        return retval.map()?.map((entry) => new Uint8Array(entry.val().bytes())) ?? [];
+    } catch {
+        throw new NotVeilWalletError();
+    }
+}
+
+/** Validate, resolve, and verify an address using one rule on every platform. */
+export async function recoverWalletByAddress(
+    input: string,
+    dependencies: AddressRecoveryDependencies,
+): Promise<{ address: string; signers: RegisteredSigner[]; publicKey: string }> {
+    const address = input.trim();
+    if (!StrKey.isValidContract(address)) throw new InvalidWalletAddressError();
+
+    let signers: RegisteredSigner[];
+    try {
+        if (dependencies.resolveSigners) {
+            signers = await dependencies.resolveSigners(address);
+        } else if (dependencies.rpcUrl && dependencies.networkPassphrase) {
+            signers = await resolveWalletSigners(address, dependencies.rpcUrl, dependencies.networkPassphrase);
+        } else {
+            throw new Error('Address recovery requires a signer resolver or network configuration.');
+        }
+    } catch (error) {
+        if (
+            error instanceof WalletContractNotFoundError ||
+            error instanceof WalletRecoveryNetworkError ||
+            error instanceof NotVeilWalletError
+        ) throw error;
+        throw new WalletRecoveryNetworkError(address, error);
+    }
+    if (signers.length === 0) throw new NotVeilWalletError();
+
+    const publicKey = await dependencies.authenticate(signers);
+    if (!publicKey || !isRegisteredSigner(signers, publicKey)) throw new PasskeyNotRegisteredError();
+    return { address, signers, publicKey };
 }

@@ -22,6 +22,7 @@ import {
 } from '@stellar/stellar-sdk';
 
 import { getNetwork } from './network';
+import { NotVeilWalletError, WalletContractNotFoundError } from '../../../sdk/src/recovery/signerVerification';
 
 export type WalletSigner = {
   /** The signer's slot in the contract's signer map. */
@@ -57,7 +58,8 @@ export async function readSigners(contractAddress: string): Promise<WalletSigner
 
   const sim = await server.simulateTransaction(tx);
   if (SorobanRpc.Api.isSimulationError(sim)) {
-    throw new Error(sim.error);
+    if (/not found|contract instance/i.test(sim.error)) throw new WalletContractNotFoundError(contractAddress);
+    throw new NotVeilWalletError();
   }
 
   const result = (sim as SorobanRpc.Api.SimulateTransactionSuccessResponse).result;

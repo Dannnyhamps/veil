@@ -289,24 +289,58 @@ export async function ensureFeePayer(evaluator?: PrfEvaluator): Promise<Keypair 
   return chosen.kp
 }
 
-/** Establish a fresh fee-payer for address/backup recovery when no PRF is needed. */
-export function establishFreshFeePayer(): Keypair {
-  const keypair = Keypair.random()
+/** Reuse a fee-payer if present; otherwise preserve a pinned derivation mode. */
+export async function establishRecoveredFeePayer(
+  prf?: Uint8Array | null,
+  recoveredCredentialId?: string,
+): Promise<Keypair> {
+  const existing = peekFeePayerSecret()
+  if (existing) {
+    const keypair = Keypair.fromSecret(existing)
+    cached = keypair
+    return keypair
+  }
+
+  const credentialId = recoveredCredentialId ?? walletLocal.getItem(KEY_ID)
+  const pinned = getFeePayerMode()
+  let mode: FeePayerMode
+  let keypair: Keypair
+
+  if (pinned === 'prf-raw' && prf && prf.length >= 32) {
+    mode = 'prf-raw'
+    keypair = Keypair.fromRawEd25519Seed(Buffer.from(prf.subarray(0, 32)))
+  } else if (pinned === 'prf-hkdf' && prf && prf.length >= 32) {
+    mode = 'prf-hkdf'
+    const seed = await deriveFeePayerSeedFromPrf(prf)
+    keypair = Keypair.fromRawEd25519Seed(Buffer.from(seed))
+  } else if (pinned === 'legacy' && credentialId) {
+    mode = 'legacy'
+    keypair = await deriveFeePayerKeypair(credentialId)
+  } else if (!pinned && prf && prf.length >= 32) {
+    mode = 'prf-raw'
+    keypair = Keypair.fromRawEd25519Seed(Buffer.from(prf.subarray(0, 32)))
+  } else if (!pinned) {
+    mode = 'legacy'
+    keypair = Keypair.random()
+  } else {
+    throw new Error('The existing fee-payer cannot be re-established without its original passkey secret.')
+  }
+
   cached = keypair
   cachedDiagnostics = {
     at: new Date().toISOString(),
-    prfAttempted: false,
-    prfOutcome: null,
+    prfAttempted: !!prf,
+    prfOutcome: prf ? 'success' : null,
     probed: false,
-    candidates: [{ mode: 'legacy', publicKey: keypair.publicKey(), status: 'not-probed' }],
-    chosenMode: 'legacy',
+    candidates: [{ mode, publicKey: keypair.publicKey(), status: 'not-probed' }],
+    chosenMode: mode,
     chosenPublicKey: keypair.publicKey(),
   }
-  localStorage.setItem(MODE, 'legacy')
+  localStorage.setItem(MODE, mode)
   walletSession.setItem(SECRET, keypair.secret())
   walletSession.setItem(PUBKEY, keypair.publicKey())
-  walletLocal.setItem(SECRET, keypair.secret())
   walletLocal.setItem(PUBKEY, keypair.publicKey())
+  if (mode === 'legacy') walletLocal.setItem(SECRET, keypair.secret())
   setDiagnostics(cachedDiagnostics)
   return keypair
 }

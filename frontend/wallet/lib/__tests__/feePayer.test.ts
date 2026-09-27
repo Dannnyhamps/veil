@@ -22,6 +22,7 @@ import { Keypair } from '@stellar/stellar-sdk'
 import type { PrfEvaluator } from '@veil/prf'
 import {
   ensureFeePayer,
+  establishRecoveredFeePayer,
   peekFeePayerSecret,
   getFeePayerMode,
   clearFeePayer,
@@ -120,6 +121,29 @@ describe('pre-existing wallet stays legacy (no address move)', () => {
 
     expect(prfCalled).toBe(false)
     expect(kp!.secret()).toBe(legacy.secret())
+  })
+
+  it('reuses an existing fee-payer during address recovery', async () => {
+    const fundedKey = Keypair.random()
+    localStorage.setItem(KEY_ID, CRED)
+    localStorage.setItem(SECRET, fundedKey.secret())
+    localStorage.setItem('veil_feepayer_mode', 'prf-raw')
+
+    const recovered = await establishRecoveredFeePayer(null)
+
+    expect(recovered.secret()).toBe(fundedKey.secret())
+    expect(getFeePayerMode()).toBe('prf-raw')
+    expect(localStorage.getItem(SECRET)).toBe(fundedKey.secret())
+  })
+
+  it('creates a random legacy key only when no fee-payer exists', async () => {
+    localStorage.setItem(KEY_ID, CRED)
+
+    const recovered = await establishRecoveredFeePayer(null)
+
+    expect(recovered).toBeInstanceOf(Keypair)
+    expect(getFeePayerMode()).toBe('legacy')
+    expect(localStorage.getItem(SECRET)).toBe(recovered.secret())
   })
 })
 

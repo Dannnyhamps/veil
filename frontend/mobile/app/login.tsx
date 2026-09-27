@@ -1,6 +1,6 @@
 import { errorMessage } from '../lib/errorMessage';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
@@ -10,7 +10,7 @@ import type { ThemeColors } from '../lib/theme';
 import { fontFamily } from '../theme/typography';
 import { FlowHeader } from '../components/FlowHeader';
 import { HexagonIcon } from '../components/icons';
-import { loginWithPasskey } from '../lib/passkeyLogin';
+import { loginWithAddress, loginWithPasskey } from '../lib/passkeyLogin';
 
 const IN_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
@@ -28,6 +28,7 @@ export default function LoginScreen() {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState('');
 
   const handlePasskeyLogin = async () => {
     setBusy(true);
@@ -36,6 +37,19 @@ export default function LoginScreen() {
       const result = await loginWithPasskey();
       router.replace('/dashboard');
       void result;
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleAddressLogin = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await loginWithAddress(walletAddress);
+      router.replace('/dashboard');
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -74,6 +88,28 @@ export default function LoginScreen() {
             )}
           </Pressable>
         )}
+
+        <TextInput
+          testID="login-address-input"
+          accessibilityLabel="Wallet contract address"
+          value={walletAddress}
+          onChangeText={setWalletAddress}
+          placeholder="C... wallet address"
+          placeholderTextColor={colors.textFaint}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          editable={!busy}
+          style={styles.addressInput}
+        />
+        <Pressable
+          testID="login-address-button"
+          accessibilityRole="button"
+          disabled={busy || !walletAddress.trim()}
+          onPress={handleAddressLogin}
+          style={({ pressed }) => [styles.ctaSecondary, busy && styles.disabled, pressed && styles.pressed]}
+        >
+          {busy ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.ctaSecondaryText}>Sign in with address</Text>}
+        </Pressable>
 
         <Pressable accessibilityRole="button" onPress={() => router.push('/recover')} style={styles.linkBtn}>
           <Text style={styles.link}>Lost your passkey? Recover with servers</Text>
@@ -118,6 +154,27 @@ const createStyles = (colors: ThemeColors) =>
     disabled: { opacity: 0.5 },
     pressed: { opacity: 0.85 },
     ctaText: { color: colors.onAccent, fontFamily: fontFamily.bodySemiBold, fontSize: 15 },
+    addressInput: {
+      color: colors.textPrimary,
+      fontFamily: fontFamily.address,
+      fontSize: 13,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceMd,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      marginTop: 18,
+    },
+    ctaSecondary: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 100,
+      paddingVertical: 15,
+    },
+    ctaSecondaryText: { color: colors.accent, fontFamily: fontFamily.bodySemiBold, fontSize: 14 },
     linkBtn: { alignItems: 'center', paddingVertical: 13 },
     link: { color: colors.accent, fontFamily: fontFamily.bodyMedium, fontSize: 14 },
     linkMuted: { color: colors.textMuted, fontFamily: fontFamily.body, fontSize: 13 },
