@@ -24,6 +24,11 @@ describe('resolveFlip', () => {
     expect(resolveFlip('XLM', 'USDC', [XLM], USDC_ISSUER)).toBeNull()
   })
 
+  it('does not flip to a same-code asset from another issuer', () => {
+    const impostor = { code: 'USDC', issuer: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF', balance: '999' }
+    expect(resolveFlip('XLM', 'USDC', [XLM, impostor], USDC_ISSUER)).toBeNull()
+  })
+
   // Regression: the receive picker lists USDC and XLM only, so moving any other
   // held asset onto it left the <select> displaying a value it had no option
   // for, while state said otherwise.

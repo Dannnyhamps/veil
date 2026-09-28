@@ -5,20 +5,21 @@ Object.assign(globalThis, { TextEncoder, TextDecoder })
 import { Asset, Networks } from '@stellar/stellar-sdk'
 import {
   ASSET_REGISTRY,
+  USDC_MAINNET_ISSUER,
+  USDC_TESTNET_ISSUER,
   USDT0_MAINNET_ISSUER,
   USDT0_MAINNET_SAC,
   getAssetIssuer,
   getRegisteredAsset,
   isRegisteredIssuer,
-} from '../assets'
+} from '@veil/agent/assets'
 
 describe('Verified Asset Registry - USDT0 (Issue #787)', () => {
   it('USDT0 resolves to exactly the pinned issuer on mainnet', () => {
-    const asset = getRegisteredAsset('USDT0')
+    const asset = getRegisteredAsset('USDT0', USDT0_MAINNET_ISSUER)
     expect(asset).not.toBeNull()
     expect(asset?.code).toBe('USDT0')
     expect(asset?.issuer).toBe(USDT0_MAINNET_ISSUER)
-    expect(asset?.issuer).toBe('GATISXX6BZ6NC7IKQBY37CJD4SOZL3CYZJWXEDG6JVIY4WBS6KXJHN6Q')
     expect(asset?.network).toBe('mainnet')
     expect(asset?.kind).toBe('stablecoin')
     expect(asset?.homeDomain).toBeUndefined()
@@ -28,21 +29,27 @@ describe('Verified Asset Registry - USDT0 (Issue #787)', () => {
     // Acceptance criterion: A test derives the SAC rather than asserting a pasted literal
     const derivedContractId = new Asset('USDT0', USDT0_MAINNET_ISSUER).contractId(Networks.PUBLIC)
     expect(derivedContractId).toBe(USDT0_MAINNET_SAC)
-    expect(derivedContractId).toBe('CBSJZEIO5C7KC2SF3MKSNXXJSW5G3VTNBX4ATMKUI3B2MR4JKM4R26YF')
-    expect(ASSET_REGISTRY.USDT0.sacContractId).toBe(derivedContractId)
+    expect(ASSET_REGISTRY['USDT0:mainnet'].sacContractId).toBe(derivedContractId)
   })
 
   it('does not offer USDT0 on testnet', () => {
     // Acceptance criterion: Nothing offers USDT0 on testnet
-    expect(getRegisteredAsset('USDT0', 'testnet')).toBeNull()
+    expect(getRegisteredAsset('USDT0', USDT0_MAINNET_ISSUER, 'testnet')).toBeNull()
     expect(getAssetIssuer('USDT0', 'testnet')).toBeNull()
     expect(isRegisteredIssuer('USDT0', USDT0_MAINNET_ISSUER, 'testnet')).toBe(false)
   })
 
   it('offers USDT0 on mainnet', () => {
-    expect(getRegisteredAsset('USDT0', 'mainnet')?.issuer).toBe(USDT0_MAINNET_ISSUER)
+    expect(getRegisteredAsset('USDT0', USDT0_MAINNET_ISSUER, 'mainnet')?.issuer).toBe(USDT0_MAINNET_ISSUER)
     expect(getAssetIssuer('USDT0', 'mainnet')).toBe(USDT0_MAINNET_ISSUER)
     expect(isRegisteredIssuer('USDT0', USDT0_MAINNET_ISSUER, 'mainnet')).toBe(true)
+  })
+
+  it('keeps the two USDC issuers distinct', () => {
+    expect(getAssetIssuer('USDC', 'mainnet')).toBe(USDC_MAINNET_ISSUER)
+    expect(getRegisteredAsset('USDC', USDC_MAINNET_ISSUER)?.network).toBe('mainnet')
+    expect(getRegisteredAsset('USDC', USDC_TESTNET_ISSUER)?.network).toBe('testnet')
+    expect(isRegisteredIssuer('USDC', USDC_MAINNET_ISSUER, 'testnet')).toBe(false)
   })
 
   it('rejects trustlines with code USDT0 and any impostor issuer', () => {

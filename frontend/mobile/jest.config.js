@@ -14,6 +14,11 @@ const expoPreset = require('jest-expo/jest-preset');
  */
 module.exports = {
   ...expoPreset,
+  moduleNameMapper: {
+    ...expoPreset.moduleNameMapper,
+    '^@veil/agent/assets$': '<rootDir>/../../packages/agent/src/assets.ts',
+    '^@stellar/stellar-sdk$': '<rootDir>/node_modules/@stellar/stellar-sdk',
+  },
   setupFiles: [...expoPreset.setupFiles, '<rootDir>/jest.setup.js'],
   transformIgnorePatterns: expoPreset.transformIgnorePatterns.map((pattern) =>
     pattern.startsWith('/node_modules/(?!(') ? pattern.replace('(?!(', '(?!(@noble|') : pattern

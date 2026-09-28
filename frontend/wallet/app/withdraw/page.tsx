@@ -31,6 +31,7 @@ import {
   type Sep24TransactionStatus,
 } from '@/lib/sep24'
 import { getNetwork } from '@/lib/network'
+import { getAssetIssuer } from '@veil/agent/assets'
 import { beginTx, endTx } from '@/lib/txState'
 
 const Server = Horizon.Server
@@ -113,7 +114,8 @@ export default function WithdrawPage() {
         })
       setAssets(list)
       // Prefer USDC if present, otherwise first asset
-      const usdc = list.find(a => a.code === 'USDC')
+      const usdcIssuer = getAssetIssuer('USDC', network.name)
+      const usdc = list.find(a => a.code === 'USDC' && a.issuer === usdcIssuer)
       setSelected(usdc ?? list[0] ?? null)
     }).catch(() => {
       setAssets([{ code: 'XLM', issuer: null, balance: '0' }])

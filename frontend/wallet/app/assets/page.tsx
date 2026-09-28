@@ -19,7 +19,7 @@ import {
 } from '@/lib/trustlines'
 import { walletLocal, walletSession } from '@/lib/walletStorage'
 
-import { USDY_MAINNET_ISSUER, getRegisteredAsset, isRegisteredIssuer } from '@/lib/assets'
+import { USDY_MAINNET_ISSUER, getRegisteredAsset, isRegisteredIssuer } from '@veil/agent/assets'
 import { fetchPrice } from '@/lib/fetchPrice'
 import {
   ISSUER_TOML_TTL_MS,
@@ -270,8 +270,8 @@ export default function AssetsPage() {
               const price = prices[`${line.code}:${line.issuer}`]
               const usdVal = price != null ? Number(line.balance) * price : null
               const meta = issuerMeta[`${line.code}:${line.issuer}`]
-              const registered = isRegisteredIssuer(line.code, line.issuer) && getRegisteredAsset(line.code)?.code === line.code
-                ? getRegisteredAsset(line.code)
+              const registered = isRegisteredIssuer(line.code, line.issuer)
+                ? getRegisteredAsset(line.code, line.issuer)
                 : null
               return (
                 <div key={`${line.code}-${line.issuer}`} className="card" style={trustlineRowStyle}>

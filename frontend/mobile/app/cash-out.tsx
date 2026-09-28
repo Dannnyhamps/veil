@@ -40,9 +40,10 @@ import { loadHoldings, type Holding } from '../lib/holdings';
 import { errorMessage } from '../lib/errorMessage';
 import { NotEnoughToSend, spendAsset } from '../lib/spendAsset';
 import { useWallet } from '../components/WalletProvider';
+import { getAssetIssuer } from '@veil/agent/assets';
 
 /** Circle's USDC on mainnet — the only asset Linq's Stellar leg credits. */
-const USDC_MAINNET_ISSUER = 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN';
+const USDC_MAINNET_ISSUER = getAssetIssuer('USDC', 'mainnet')!;
 
 /**
  * Cash out — USDC to a Nigerian bank account.
@@ -285,7 +286,9 @@ export default function CashOutScreen() {
         const address = await getWalletAddress();
         if (!address) return;
         const holdings = await loadHoldings(address);
-        const usdc = holdings.find((h: Holding) => h.code.toUpperCase() === 'USDC');
+        const usdc = holdings.find(
+          (h: Holding) => h.code.toUpperCase() === 'USDC' && h.issuer === USDC_MAINNET_ISSUER,
+        );
         if (alive) setUsdcBalance(usdc ? Number(usdc.balance) : 0);
       } catch {
         if (alive) setUsdcBalance(null);

@@ -1,4 +1,5 @@
 import { Networks } from '@stellar/stellar-sdk'
+import { getAssetIssuer } from './assets.js'
 
 /**
  * Which Stellar network this agent serves, and every endpoint that follows
@@ -31,13 +32,11 @@ const DEFAULTS = {
     // SDF runs no public mainnet RPC. This is Veil's own proxy, which fails over
     // across several providers — the same one the web and mobile apps use.
     sorobanRpcUrl: 'https://app.useveilapp.xyz/api/rpc/mainnet',
-    usdcIssuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
   },
   testnet: {
     passphrase: Networks.TESTNET,
     horizonUrl: 'https://horizon-testnet.stellar.org',
     sorobanRpcUrl: 'https://soroban-testnet.stellar.org',
-    usdcIssuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
   },
 } as const
 
@@ -47,5 +46,5 @@ export const NETWORK_PASSPHRASE: string = d.passphrase
 export const HORIZON_URL = process.env.HORIZON_URL?.trim() || d.horizonUrl
 export const SOROBAN_RPC_URL = process.env.SOROBAN_RPC_URL?.trim() || d.sorobanRpcUrl
 
-/** USDC's issuer on this network, so a bare "USDC" names one specific asset. */
-export const USDC_ISSUER: string = d.usdcIssuer
+/** USDC's issuer on this network, resolved from the shared registry. */
+export const USDC_ISSUER: string = getAssetIssuer('USDC', NETWORK)!

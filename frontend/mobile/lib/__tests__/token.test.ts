@@ -61,4 +61,9 @@ describe('filterTokenActivity', () => {
     const rows = filterTokenActivity([usdcOut], ME, 'USDC', OTHER);
     expect(rows).toEqual([]);
   });
+
+  it('requires an issuer for non-native assets', () => {
+    const rows = filterTokenActivity([usdcOut], ME, 'USDC', null);
+    expect(rows).toEqual([]);
+  });
 });

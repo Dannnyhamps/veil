@@ -137,8 +137,9 @@ export default function SwapPage() {
         setSourceBalances(assets)
         // The asset the agent named, if the account holds it; otherwise XLM.
         const wanted = prefillRef.current?.from
+        const wantedMatches = wanted ? assets.filter((a) => a.code === wanted) : []
         setSourceAsset(
-          (wanted && assets.find((a) => a.code === wanted)) ||
+          (wantedMatches.length === 1 ? wantedMatches[0] : undefined) ||
             assets.find((a) => a.code === 'XLM') ||
             assets[0],
         )
@@ -503,14 +504,16 @@ export default function SwapPage() {
               <div className="flex gap-4 items-center">
                 <select
                   className="bg-surface-md border-0 text-off-white py-2 px-3 rounded-xl cursor-pointer text-[15px] font-semibold"
-                  value={sourceAsset?.code || ''}
+                  value={sourceAsset ? `${sourceAsset.code}:${sourceAsset.issuer ?? ''}` : ''}
                   onChange={(e) =>
-                    setSourceAsset(sourceBalances.find((b) => b.code === e.target.value) || null)
+                    setSourceAsset(
+                      sourceBalances.find((b) => `${b.code}:${b.issuer ?? ''}` === e.target.value) || null,
+                    )
                   }
                 >
                   {sourceBalances.map((b) => (
-                    <option key={b.code} value={b.code}>
-                      {b.code}
+                    <option key={`${b.code}:${b.issuer ?? ''}`} value={`${b.code}:${b.issuer ?? ''}`}>
+                      {b.code}{b.issuer ? ` · ${b.issuer.slice(0, 6)}` : ''}
                     </option>
                   ))}
                 </select>

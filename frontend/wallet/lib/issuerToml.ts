@@ -1,6 +1,6 @@
 import { StellarToml } from '@stellar/stellar-sdk'
 
-import { getRegisteredAsset, isRegisteredIssuer, type RegisteredAsset } from './assets'
+import { getRegisteredAsset, isRegisteredIssuer, type RegisteredAsset } from '@veil/agent/assets'
 
 /** Issuer stellar.toml metadata is refreshed once a day. */
 export const ISSUER_TOML_TTL_MS = 24 * 60 * 60 * 1000
@@ -325,7 +325,7 @@ export async function loadRegisteredIssuerMetadata(
 ): Promise<IssuerTomlMetadata | null> {
   if (!isRegisteredIssuer(code, issuer)) return null
   // Stellar asset codes are case-sensitive even though registry lookup is not.
-  const asset = getRegisteredAsset(code)
+  const asset = getRegisteredAsset(code, issuer)
   // `homeDomain` is optional. The genuine USDT0 issuer publishes none while all
   // seven impostors of that code do, so its absence means only "no toml to
   // read" — the caller falls back to registry text and a letter avatar.

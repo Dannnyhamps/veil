@@ -26,8 +26,7 @@ import {
 
 import { getNetwork, getNetworkName } from './network';
 import { getSignerSecret } from './walletStore';
-import { usdcIssuerFor } from './receiveReadiness';
-import { getAssetIssuer } from './assets';
+import { getAssetIssuer } from '@veil/agent/assets';
 
 /** Reserve for one trustline (0.5 XLM) plus room for the fee. */
 export const MIN_XLM_FOR_TRUSTLINE = 0.6;
@@ -71,12 +70,7 @@ export async function enableTrustline(assetCode: string): Promise<string | null>
   const upperCode = assetCode.toUpperCase();
   const networkName = getNetworkName();
   
-  let issuer: string | null = null;
-  if (upperCode === 'USDC') {
-    issuer = usdcIssuerFor(networkName);
-  } else {
-    issuer = getAssetIssuer(upperCode, networkName);
-  }
+  const issuer = getAssetIssuer(upperCode, networkName);
 
   if (!issuer) {
     throw new Error(`Unregistered asset code "${assetCode}". Cannot verify issuer against registry.`);

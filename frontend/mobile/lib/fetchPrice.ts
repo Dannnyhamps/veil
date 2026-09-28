@@ -18,18 +18,8 @@ const TIMEOUT_MS = 5_000;
  * network, and asking for the wrong one is indistinguishable from asking for a
  * pair nobody trades: Lens answers 404 and the wallet shows no price.
  *
- * The mainnet issuer is Circle's, confirmed by its home domain (circle.com)
- * rather than by asset code; Horizon lists many unrelated assets called USDC.
- * The testnet issuer is the one the Lens deployment actually watches.
- *
- * This was previously a single constant holding the *mainnet* issuer under a
- * comment claiming it was testnet, which is why testnet quotes never resolved.
+ * Issuers are selected by network from the shared asset registry.
  */
-const USDC_ISSUERS = {
-  mainnet: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
-  testnet: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
-} as const;
-
 /**
  * Lens gates reads behind an API key (`REQUIRE_API_KEY`). Without one every
  * request comes back 401, which the wallet cannot tell apart from "no such
@@ -56,7 +46,13 @@ async function activeNetworkName(): Promise<'testnet' | 'mainnet'> {
 }
 
 async function usdcIssuer(): Promise<string> {
-  return (await activeNetworkName()) === 'mainnet' ? USDC_ISSUERS.mainnet : USDC_ISSUERS.testnet;
+  const [network, registry] = await Promise.all([
+    activeNetworkName(),
+    import('@veil/agent/assets'),
+  ]);
+  const issuer = registry.getAssetIssuer('USDC', network);
+  if (!issuer) throw new Error(`No USDC issuer is registered for ${network}.`);
+  return issuer;
 }
 
 /**
@@ -107,7 +103,7 @@ async function orderBookPrice(
 ): Promise<number | null> {
   const horizon =
     network === 'mainnet' ? 'https://horizon.stellar.org' : 'https://horizon-testnet.stellar.org';
-  const quoteIssuer = USDC_ISSUERS[network];
+  const quoteIssuer = await usdcIssuer();
 
   const selling =
     code.toUpperCase() === 'XLM' || !issuer
@@ -148,7 +144,7 @@ export async function fetchPrice(
 
   const network = await activeNetworkName();
   const assetA = assetParam(code, issuer);
-  const assetB = `USDC:${USDC_ISSUERS[network]}`;
+  const assetB = `USDC:${await usdcIssuer()}`;
   // Lens serves both networks from one deployment and falls back to its own
   // STELLAR_NETWORK when the caller does not say. That default is testnet, so
   // asking for mainnet USDC without this returned a testnet quote — XLM at

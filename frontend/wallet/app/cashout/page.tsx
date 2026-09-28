@@ -21,6 +21,7 @@ import { PageHeader } from '@/components/ui/primitives'
 import { walletLocal, walletSession } from '@/lib/walletStorage'
 import { NIGERIAN_BANKS, bankName } from '@/lib/nigerianBanks'
 import { getNetwork } from '@/lib/network'
+import { getAssetIssuer } from '@veil/agent/assets'
 import {
   OfframpUnavailable,
   createOrder,
@@ -150,9 +151,12 @@ export default function CashOutPage() {
     const horizon = getNetwork().horizonUrl.replace(/\/+$/, '')
     fetch(`${horizon}/accounts/${encodeURIComponent(feePayer)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((acct: { balances?: Array<{ asset_code?: string; balance: string }> }) => {
+      .then((acct: { balances?: Array<{ asset_code?: string; asset_issuer?: string; balance: string }> }) => {
         if (cancelled) return
-        const usdc = acct.balances?.find((b) => b.asset_code === 'USDC')
+        const issuer = getAssetIssuer('USDC', getNetwork().name)
+        const usdc = issuer
+          ? acct.balances?.find((b) => b.asset_code === 'USDC' && b.asset_issuer === issuer)
+          : undefined
         setUsdcBalance(usdc ? Number(usdc.balance) : 0)
       })
       .catch(() => !cancelled && setUsdcBalance(null))

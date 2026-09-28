@@ -9,6 +9,7 @@ import { Asset, Horizon, Keypair, Operation, TransactionBuilder } from '@stellar
 
 import { inclusionFee } from './fees';
 import { getNetwork, getNetworkName } from './network';
+import { getAssetIssuer } from '@veil/agent/assets';
 
 const SOROSWAP_API_KEY = process.env['EXPO_PUBLIC_SOROSWAP_API_KEY']?.trim() || '';
 
@@ -160,19 +161,22 @@ export async function resolveTokenAddress(symbol: string): Promise<string | null
   const code = symbol.toUpperCase();
   if (code === 'XLM') return Asset.native().contractId(getNetwork().networkPassphrase);
   if (isTestnet()) return null;
-  return (await fetchListAsset(code))?.contract ?? null;
+  return (await fetchListAsset(code, getAssetIssuer(code, 'mainnet') ?? undefined))?.contract ?? null;
 }
 
 type ListAsset = { code?: string; issuer?: string; contract?: string };
 
-async function fetchListAsset(code: string): Promise<ListAsset | null> {
+async function fetchListAsset(code: string, issuer?: string): Promise<ListAsset | null> {
   try {
     const res = await fetch(
       'https://raw.githubusercontent.com/soroswap/token-list/main/tokenList.json'
     );
     const list = await res.json();
     const assets: ListAsset[] = list.assets ?? [];
-    return assets.find((t) => (t.code ?? '').toUpperCase() === code) ?? null;
+    const matches = assets.filter(
+      (t) => (t.code ?? '').toUpperCase() === code && (!issuer || t.issuer === issuer),
+    );
+    return matches.length === 1 ? matches[0]! : null;
   } catch {
     return null;
   }
@@ -190,7 +194,7 @@ async function fetchListAsset(code: string): Promise<ListAsset | null> {
 export async function ensureSwapOutTrustline(signerSecret: string, code: string): Promise<void> {
   const u = code.toUpperCase();
   if (u === 'XLM' || isTestnet()) return;
-  const entry = await fetchListAsset(u);
+  const entry = await fetchListAsset(u, getAssetIssuer(u, 'mainnet') ?? undefined);
   if (!entry?.issuer) return; // unknown asset — let the router's own error surface
   const asset = new Asset(u, entry.issuer);
 

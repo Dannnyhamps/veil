@@ -7,19 +7,27 @@
  * issuer, and balance the row renders.
  */
 
-import { parseHeldAssets, type HorizonBalanceLike } from '../assets';
+import { parseHeldAssets, type HorizonBalanceLike } from '../holdings';
+import {
+  getAssetIssuer,
+  getRegisteredAsset,
+  isRegisteredIssuer,
+  USDC_MAINNET_ISSUER,
+  USDC_TESTNET_ISSUER,
+  USDT0_MAINNET_ISSUER,
+} from '@veil/agent/assets';
 
 const USDC = {
   asset_type: 'credit_alphanum4',
   asset_code: 'USDC',
-  asset_issuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
+  asset_issuer: USDC_MAINNET_ISSUER,
   balance: '42.5000000',
 } satisfies HorizonBalanceLike;
 
 const LONGASSET = {
   asset_type: 'credit_alphanum12',
   asset_code: 'LONGASSET',
-  asset_issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
+  asset_issuer: USDC_TESTNET_ISSUER,
   balance: '1.0000000',
 } satisfies HorizonBalanceLike;
 
@@ -56,24 +64,21 @@ describe('parseHeldAssets', () => {
 
 describe('mobile ASSET_REGISTRY - USDT0 (Issue #787)', () => {
   it('USDT0 resolves to exactly the pinned issuer on mainnet', () => {
-    const { getRegisteredAsset, USDT0_MAINNET_ISSUER } = require('../assets');
-    const asset = getRegisteredAsset('USDT0');
+    const asset = getRegisteredAsset('USDT0', USDT0_MAINNET_ISSUER);
     expect(asset).not.toBeNull();
     expect(asset?.code).toBe('USDT0');
     expect(asset?.issuer).toBe(USDT0_MAINNET_ISSUER);
-    expect(asset?.issuer).toBe('GATISXX6BZ6NC7IKQBY37CJD4SOZL3CYZJWXEDG6JVIY4WBS6KXJHN6Q');
     expect(asset?.network).toBe('mainnet');
     expect(asset?.kind).toBe('stablecoin');
     expect(asset?.homeDomain).toBeUndefined();
   });
 
   it('gating: does not offer USDT0 on testnet, but offers on mainnet', () => {
-    const { getRegisteredAsset, getAssetIssuer, isRegisteredIssuer, USDT0_MAINNET_ISSUER } = require('../assets');
-    expect(getRegisteredAsset('USDT0', 'testnet')).toBeNull();
+    expect(getRegisteredAsset('USDT0', USDT0_MAINNET_ISSUER, 'testnet')).toBeNull();
     expect(getAssetIssuer('USDT0', 'testnet')).toBeNull();
     expect(isRegisteredIssuer('USDT0', USDT0_MAINNET_ISSUER, 'testnet')).toBe(false);
 
-    expect(getRegisteredAsset('USDT0', 'mainnet')?.issuer).toBe(USDT0_MAINNET_ISSUER);
+    expect(getRegisteredAsset('USDT0', USDT0_MAINNET_ISSUER, 'mainnet')?.issuer).toBe(USDT0_MAINNET_ISSUER);
     expect(getAssetIssuer('USDT0', 'mainnet')).toBe(USDT0_MAINNET_ISSUER);
     expect(isRegisteredIssuer('USDT0', USDT0_MAINNET_ISSUER, 'mainnet')).toBe(true);
   });

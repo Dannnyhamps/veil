@@ -1,10 +1,10 @@
 /** @jest-environment node */
 
-import { ASSET_REGISTRY } from '../assets'
+import { getRegisteredAsset, USDC_MAINNET_ISSUER } from '@veil/agent/assets'
 import { MAX_ISSUER_LOGO_BYTES } from '../issuerToml'
 import { fetchLogoOverHttps, serveIssuerLogo } from '../issuerLogoProxy'
 
-const USDC = ASSET_REGISTRY.USDC
+const USDC = getRegisteredAsset('USDC', USDC_MAINNET_ISSUER)!
 const UNREGISTERED_ISSUER = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF'
 const LOGO_URL = 'https://cdn.example/usdc.png'
 const PNG = new Uint8Array([137, 80, 78, 71])

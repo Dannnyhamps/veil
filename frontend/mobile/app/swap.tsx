@@ -20,6 +20,7 @@ import { getFeePayerXlm, sendAssetFromContract, type FeePayerXlm } from '../lib/
 import { deployWalletIfNeeded } from '../lib/deployWallet';
 import { useWallet } from '../components/WalletProvider';
 import { getNetwork } from '../lib/network';
+import { getAssetIssuer } from '@veil/agent/assets';
 import { signAndSubmitSorobanXdr } from '../lib/sorobanTx';
 import { useNetwork } from '../hooks/useNetwork';
 import { requirePasskey } from '../lib/passkey';
@@ -115,7 +116,18 @@ export default function SwapScreen() {
   }, []);
 
   const balanceOf = (code: string): number | null => {
-    const h = holdings.find((x) => x.code.toUpperCase() === code.toUpperCase());
+    const upper = code.toUpperCase();
+    if (upper === 'XLM') {
+      const native = holdings.find((x) => x.code.toUpperCase() === 'XLM' && x.native);
+      return native ? Number(native.balance) : null;
+    }
+    const issuer = getAssetIssuer(upper, networkName);
+    const matches = holdings.filter((x) => x.code.toUpperCase() === upper);
+    const h = issuer
+      ? matches.find((x) => x.issuer === issuer)
+      : matches.length === 1
+        ? matches[0]
+        : undefined;
     return h ? Number(h.balance) : null;
   };
   const fmtBal = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 4 });

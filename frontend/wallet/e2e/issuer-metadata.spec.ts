@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { Keypair } from '@stellar/stellar-sdk'
-import { ASSET_REGISTRY } from '../lib/assets'
+import { USDC_MAINNET_ISSUER } from '@veil/agent/assets'
 import { ISSUER_TOML_TTL_MS, MAX_ISSUER_LOGO_BYTES } from '../lib/issuerToml'
 
 test.use({ serviceWorkers: 'block' })
 
-const issuer = ASSET_REGISTRY.USDC.issuer
+const issuer = USDC_MAINNET_ISSUER
 const unknownIssuer = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF'
 const logo = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" fill="blue"/></svg>')
 const cacheKey = `veil_issuer_toml:v2:USDC:${issuer}`

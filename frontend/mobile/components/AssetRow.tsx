@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../hooks/useTheme';
 import type { ThemeColors } from '../lib/theme';
-import type { HeldAsset } from '../lib/assets';
+import type { HeldAsset } from '../lib/holdings';
 import { truncateAddress } from './ui/AddressChip';
 
 /**

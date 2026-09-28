@@ -7,11 +7,11 @@ import {
   MissingTrustline,
   MIN_XLM_FOR_TRUSTLINE,
 } from '../enableUsdc';
-import { USDY_MAINNET_ISSUER, getRegisteredAsset, isRegisteredIssuer } from '../assets';
+import { USDY_MAINNET_ISSUER, getRegisteredAsset, isRegisteredIssuer } from '@veil/agent/assets';
 
 describe('Asset Registry for USDY & USDC', () => {
-  it('verifies USDY issuer against the registry (GAJMPX5NBOG6TQFPQGRABJEEB2YE7RFRLUKJDZAZGAD5GFX4J7TADAZ6)', () => {
-    const usdy = getRegisteredAsset('USDY');
+  it('verifies the USDY issuer against the shared registry', () => {
+    const usdy = getRegisteredAsset('USDY', USDY_MAINNET_ISSUER);
     expect(usdy).not.toBeNull();
     expect(usdy?.code).toBe('USDY');
     expect(usdy?.issuer).toBe(USDY_MAINNET_ISSUER);

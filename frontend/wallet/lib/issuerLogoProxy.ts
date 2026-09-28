@@ -12,7 +12,7 @@
 
 import { StellarToml } from '@stellar/stellar-sdk'
 
-import { getRegisteredAsset, isRegisteredIssuer } from './assets'
+import { getRegisteredAsset, isRegisteredIssuer } from '@veil/agent/assets'
 import {
   isHttpsImageUrl,
   readBoundedImage,
@@ -68,7 +68,7 @@ export async function serveIssuerLogo(requestUrl: string, deps: IssuerLogoDeps =
   const params = new URL(requestUrl).searchParams
   const code = params.get('code') ?? ''
   const issuer = params.get('issuer') ?? ''
-  const asset = getRegisteredAsset(code)
+  const asset = getRegisteredAsset(code, issuer)
   // `homeDomain` is optional: the genuine USDT0 issuer publishes none, while
   // every impostor of that code does. No domain simply means no toml to read,
   // and the caller falls back to a letter avatar — it is not a signal either way.

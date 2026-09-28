@@ -36,7 +36,10 @@ export function resolveFlip(
   usdcIssuer?: string,
 ): { nextSource: StellarAsset; nextDest: StellarAsset } | null {
   if (!sourceCode || !(DEST_CODES as readonly string[]).includes(sourceCode)) return null
-  const nextSource = balances.find((b) => b.code === destCode)
+  const expectedIssuer = destCode === 'USDC' ? usdcIssuer : undefined
+  const nextSource = balances.find(
+    (b) => b.code === destCode && (expectedIssuer ? b.issuer === expectedIssuer : !b.issuer),
+  )
   if (!nextSource) return null
   return { nextSource, nextDest: makeDestAsset(sourceCode, usdcIssuer) }
 }

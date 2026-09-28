@@ -109,7 +109,7 @@ export function filterTokenActivity(
     if (op.type === 'payment') {
       const opCode = op.asset_type === 'native' ? 'XLM' : op.asset_code ?? '';
       const matchesCode = opCode === code;
-      const matchesIssuer = code === 'XLM' || !issuer || op.asset_issuer === issuer;
+      const matchesIssuer = code === 'XLM' || (!!issuer && op.asset_issuer === issuer);
       if (!matchesCode || !matchesIssuer) continue;
 
       const received = op.to === account;
@@ -159,7 +159,7 @@ export async function fetchTokenDetail(
       code === 'XLM'
         ? balances.find((b) => b.asset_type === 'native')
         : balances.find(
-            (b) => b.asset_code === code && (!issuer || b.asset_issuer === issuer),
+            (b) => !!issuer && b.asset_code === code && b.asset_issuer === issuer,
           );
 
     return {

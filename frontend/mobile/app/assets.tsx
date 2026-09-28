@@ -9,10 +9,9 @@ import type { ThemeColors } from '../lib/theme';
 import {
   fetchHeldAssets,
   loadWalletAddress,
-  USDY_MAINNET_ISSUER,
-  getRegisteredAsset,
   type HeldAsset,
-} from '../lib/assets';
+} from '../lib/holdings';
+import { getRegisteredAsset, USDY_MAINNET_ISSUER } from '@veil/agent/assets';
 import { fetchPrice, formatUsd, usdValue } from '../lib/fetchPrice';
 import { getNetworkName } from '../lib/network';
 import { enableUsdy, AccountNotFunded, NotEnoughXlm } from '../lib/enableUsdc';
@@ -94,7 +93,7 @@ export default function AssetsScreen() {
     );
   }, [state]);
 
-  const usdyRegistered = getRegisteredAsset('USDY');
+  const usdyRegistered = getRegisteredAsset('USDY', USDY_MAINNET_ISSUER);
 
   const onMainnet = getNetworkName() === 'mainnet';
 

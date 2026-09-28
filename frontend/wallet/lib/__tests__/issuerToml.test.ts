@@ -2,7 +2,7 @@
 import { TextEncoder, TextDecoder } from 'util'
 Object.assign(globalThis, { TextEncoder, TextDecoder })
 
-import { ASSET_REGISTRY } from '../assets'
+import { getRegisteredAsset, USDC_MAINNET_ISSUER, USDC_TESTNET_ISSUER, USDY_MAINNET_ISSUER } from '@veil/agent/assets'
 import {
   ISSUER_LOGO_PROXY_PATH,
   ISSUER_TOML_TTL_MS,
@@ -20,8 +20,8 @@ import {
 
 const LOGO = 'data:image/png;base64,AAAA'
 
-const USDC = ASSET_REGISTRY.USDC
-const TESTNET_USDC_ISSUER = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
+const USDC = getRegisteredAsset('USDC', USDC_MAINNET_ISSUER)!
+const TESTNET_USDC_ISSUER = USDC_TESTNET_ISSUER
 const UNREGISTERED_ISSUER = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF'
 
 function memoryStore(seed: Record<string, string> = {}): CacheStore & { data: Record<string, string> } {
@@ -256,18 +256,18 @@ describe('loadRegisteredIssuerMetadata', () => {
   })
 
   it('falls back to a stale cache when the toml fetch fails', async () => {
-    const key = `veil_issuer_toml:v2:USDY:${ASSET_REGISTRY.USDY.issuer}`
+    const key = `veil_issuer_toml:v2:USDY:${USDY_MAINNET_ISSUER}`
     const store = memoryStore({
       [key]: JSON.stringify({
         code: 'USDY',
-        issuer: ASSET_REGISTRY.USDY.issuer,
+        issuer: USDY_MAINNET_ISSUER,
         name: 'Cached USDY',
         description: 'still here',
         imageUrl: LOGO,
         fetchedAt: now - ISSUER_TOML_TTL_MS - 5,
       }),
     })
-    const meta = await loadRegisteredIssuerMetadata('USDY', ASSET_REGISTRY.USDY.issuer, {
+    const meta = await loadRegisteredIssuerMetadata('USDY', USDY_MAINNET_ISSUER, {
       now,
       store,
       resolveToml: async () => {

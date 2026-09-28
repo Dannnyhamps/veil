@@ -9,9 +9,9 @@ import {
   MAINNET_KEY_SUFFIX,
   namespaceKey as sdkNamespaceKey,
   getNativeAssetContractId as sdkGetNativeAssetContractId,
-  getUsdcIssuer as sdkGetUsdcIssuer,
   buildFriendbotUrl as sdkBuildFriendbotUrl,
 } from '@veil/sdk'
+import { getAssetIssuer } from '@veil/agent/assets'
 
 export type { VeilNetworkName, VeilNetwork }
 export { NETWORK_STORAGE_KEY, WALLET_KEYS, WALLET_KEY_SET, MAINNET_KEY_SUFFIX }
@@ -235,6 +235,8 @@ export function mainnetUsesProxy(): boolean {
  * exist and every price came back null).
  */
 export function getUsdcIssuer(): string {
-  return sdkGetUsdcIssuer(getNetwork().name)
+  const issuer = getAssetIssuer('USDC', getNetwork().name)
+  if (!issuer) throw new Error(`No USDC issuer is registered for ${getNetwork().name}.`)
+  return issuer
 }
 
