@@ -11,7 +11,7 @@ import { CURRENCIES, hydrateCurrency, useCurrency, type CurrencyCode } from '@/l
 import { fetchPrice } from '@/lib/fetchPrice'
 import { downloadBrandedQr } from '@/lib/downloadBrandedQr'
 import { getNetworkName } from '@/lib/network'
-import { getAssetIssuer } from '@/lib/assets'
+import { getAssetIssuer } from '@veil/agent/assets'
 
 /** Issued assets a payment request can ask for, when live on the active network. */
 const REQUESTABLE_CODES = ['USDC', 'USDT0'] as const

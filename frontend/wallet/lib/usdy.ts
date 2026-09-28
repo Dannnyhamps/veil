@@ -10,7 +10,7 @@
  * - STRICTLY avoids advice-like language ("returns", "profit", "guaranteed", "earnings", "risk-free", "promised", etc.).
  */
 
-import { USDY_MAINNET_ISSUER } from './assets'
+import { USDY_MAINNET_ISSUER } from '@veil/agent/assets'
 
 export interface UsdyRiskItem {
   id: string

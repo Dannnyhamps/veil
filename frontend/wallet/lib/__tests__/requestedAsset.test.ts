@@ -14,7 +14,7 @@ Object.assign(globalThis, { TextEncoder, TextDecoder })
 import { Asset, Networks } from '@stellar/stellar-sdk'
 import { readPaymentRequest, resolveRequestedAsset } from '../requestedAsset'
 import { createPaymentRequest } from '../paymentRequest'
-import { getAssetIssuer, USDT0_MAINNET_ISSUER, USDT0_MAINNET_SAC } from '../assets'
+import { getAssetIssuer, USDT0_MAINNET_ISSUER, USDT0_MAINNET_SAC } from '@veil/agent/assets'
 
 const DEST = 'GCSWM5I2FRYFIDSVJDGLWDH4TMQZY6IVT4JDF2SCFW6PPJ56TSBH23NO'
 const IMPOSTORS = [

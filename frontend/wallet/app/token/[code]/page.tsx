@@ -124,7 +124,7 @@ export default function TokenPage() {
       } else {
         const account = await horizonServer.loadAccount(signerPublicKey)
         const b = (account.balances as any[]).find(b =>
-          b.asset_code === code && (!issuer || b.asset_issuer === issuer)
+          !!issuer && b.asset_code === code && b.asset_issuer === issuer
         )
         setBalance(b ? b.balance : '0.0000000')
       }
@@ -134,8 +134,8 @@ export default function TokenPage() {
         id: string; type: string
         from?: string; to?: string; funder?: string
         amount?: string; starting_balance?: string
-        asset_type?: string; asset_code?: string
-        source_amount?: string; source_asset_type?: string; source_asset_code?: string
+        asset_type?: string; asset_code?: string; asset_issuer?: string
+        source_amount?: string; source_asset_type?: string; source_asset_code?: string; source_asset_issuer?: string
         created_at: string; transaction_hash: string
       }
       const payments = await horizonServer.payments().forAccount(signerPublicKey).limit(50).order('desc').call()
@@ -144,12 +144,16 @@ export default function TokenPage() {
           if (p.type === 'create_account' && code === 'XLM') return true
           if (p.type === 'payment') {
             const assetCode = p.asset_type === 'native' ? 'XLM' : (p.asset_code ?? '')
-            return assetCode === code
+            const assetIssuer = p.asset_type === 'native' ? null : p.asset_issuer
+            return assetCode === code && (code === 'XLM' || (!!issuer && assetIssuer === issuer))
           }
           if (p.type === 'path_payment_strict_send') {
             const srcCode = p.source_asset_type === 'native' ? 'XLM' : (p.source_asset_code ?? '')
             const dstCode = p.asset_type === 'native' ? 'XLM' : (p.asset_code ?? '')
-            return srcCode === code || dstCode === code
+            const srcIssuer = p.source_asset_type === 'native' ? null : p.source_asset_issuer
+            const dstIssuer = p.asset_type === 'native' ? null : p.asset_issuer
+            return (srcCode === code && (code === 'XLM' || (!!issuer && srcIssuer === issuer)))
+              || (dstCode === code && (code === 'XLM' || (!!issuer && dstIssuer === issuer)))
           }
           return false
         })

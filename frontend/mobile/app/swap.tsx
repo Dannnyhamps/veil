@@ -26,7 +26,7 @@ import {
   type NetworkName,
   type SwapAsset,
 } from '../lib/swapAssets';
-import { getRegisteredAsset } from '../lib/assets';
+import { getRegisteredAsset } from '@veil/agent/assets';
 import { fetchContractAssetBalance, getFeePayerAddress } from '../lib/activity';
 import { getFeePayerXlm, sendAssetFromContract, type FeePayerXlm } from '../lib/contractSpend';
 import { deployWalletIfNeeded } from '../lib/deployWallet';

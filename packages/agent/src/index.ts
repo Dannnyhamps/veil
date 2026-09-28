@@ -30,3 +30,4 @@ export {
   type UserProfile,
   type VeilAgent,
 } from './agent.js'
+export * from './assets.js'

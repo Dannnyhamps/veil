@@ -29,7 +29,7 @@
 
 import type { WalletAsset } from '@/lib/walletTypes'
 import type { BlendPosition } from '@/lib/blend'
-import { getAssetIssuer, KNOWN_SAC_CONTRACT_IDS, verifiedAsset } from './assets'
+import { getAssetIssuer, KNOWN_SAC_CONTRACT_IDS, verifiedAsset } from '@veil/agent/assets'
 import { getNetworkName } from './network'
 
 // ── Asset kind classification ─────────────────────────────────────────────────

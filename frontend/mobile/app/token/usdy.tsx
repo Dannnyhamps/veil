@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { fontFamily } from '../../theme/typography';
 import { FlowHeader } from '../../components/FlowHeader';
-import { USDY_MAINNET_ISSUER } from '../../lib/assets';
+import { USDY_MAINNET_ISSUER } from '@veil/agent/assets';
 
 const USDY_INFO = {
   code: 'USDY',

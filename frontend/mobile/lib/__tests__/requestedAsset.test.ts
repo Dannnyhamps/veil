@@ -4,7 +4,7 @@
  */
 
 import { resolveDeepLink } from '../deepLinks';
-import { USDT0_MAINNET_ISSUER } from '../assets';
+import { USDT0_MAINNET_ISSUER } from '@veil/agent/assets';
 import { resolveRequestedAsset } from '../requestedAsset';
 
 const DEST = 'GCSWM5I2FRYFIDSVJDGLWDH4TMQZY6IVT4JDF2SCFW6PPJ56TSBH23NO';

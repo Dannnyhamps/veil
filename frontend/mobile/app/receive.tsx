@@ -16,7 +16,7 @@ import { getFeePayerAddress } from '../lib/activity';
 import { buildSep7PayUri } from '../lib/sep7';
 import { checkReceiveReadiness, readinessMessage, type ReceiveReadiness } from '../lib/receiveReadiness';
 import { enableUsdc } from '../lib/enableUsdc';
-import { getAssetIssuer } from '../lib/assets';
+import { getAssetIssuer } from '@veil/agent/assets';
 import { getNetworkName } from '../lib/network';
 import { CopyIcon, DownloadIcon, HexagonIcon, ShareIcon } from '../components/icons';
 

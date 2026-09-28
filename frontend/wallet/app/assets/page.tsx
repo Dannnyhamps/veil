@@ -33,7 +33,7 @@ import {
   getRegisteredAsset,
   isRegisteredIssuer,
   fetchAssetDisclosure,
-} from '@/lib/assets'
+} from '@veil/agent/assets'
 import { fetchPrice } from '@/lib/fetchPrice'
 import {
   ISSUER_TOML_TTL_MS,

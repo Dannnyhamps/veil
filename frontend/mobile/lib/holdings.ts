@@ -1,9 +1,65 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Horizon, StrKey } from '@stellar/stellar-sdk';
 
 import { getNetwork } from './network';
-import { verifiedAsset } from './assets';
+import { verifiedAsset } from '@veil/agent/assets';
 import { fetchPrice, usdValue } from './fetchPrice';
-import { fetchContractAssetBalance, fetchContractXlm, getFeePayerAddress } from './activity';
+
+/** AsyncStorage key holding the active wallet's public key (shared with backupFile). */
+export const WALLET_PUBLIC_KEY_KEY = 'invisible_wallet_public_key';
+
+/** Subset of a Horizon balance entry we depend on. */
+export interface HorizonBalanceLike {
+  asset_type: string;
+  asset_code?: string;
+  asset_issuer?: string;
+  balance: string;
+}
+
+/** A single non-native asset held by the wallet. */
+export interface HeldAsset {
+  code: string;
+  issuer: string;
+  balance: string;
+  assetType: string;
+  name?: string;
+}
+
+/** Extract classic assets from Horizon balances, retaining exact issuers. */
+export function parseHeldAssets(balances: HorizonBalanceLike[]): HeldAsset[] {
+  return balances
+    .filter((balance) => balance.asset_type === 'credit_alphanum4' || balance.asset_type === 'credit_alphanum12')
+    .filter((balance) => balance.asset_code && balance.asset_issuer)
+    .map((balance) => ({
+      code: balance.asset_code as string,
+      issuer: balance.asset_issuer as string,
+      balance: balance.balance,
+      assetType: balance.asset_type,
+    }));
+}
+
+/** Reads the active wallet's public key, or `null` when no wallet is stored. */
+export async function loadWalletAddress(): Promise<string | null> {
+  return AsyncStorage.getItem(WALLET_PUBLIC_KEY_KEY);
+}
+
+/** A Horizon 404 means the account isn't funded yet — an empty portfolio, not an error. */
+function isAccountNotFound(err: unknown): boolean {
+  const status = (err as { response?: { status?: number } })?.response?.status;
+  return status === 404 || (err instanceof Error && err.name === 'NotFoundError');
+}
+
+/** Load non-native assets, treating an unfunded account as an empty portfolio. */
+export async function fetchHeldAssets(publicKey: string): Promise<HeldAsset[]> {
+  const server = new Horizon.Server(getNetwork().horizonUrl);
+  try {
+    const account = await server.loadAccount(publicKey);
+    return parseHeldAssets(account.balances as unknown as HorizonBalanceLike[]);
+  } catch (err) {
+    if (isAccountNotFound(err)) return [];
+    throw err;
+  }
+}
 
 export type Holding = {
   code: string;
@@ -25,11 +81,6 @@ const ASSET_NAMES: Record<string, string> = {
   XLM: 'Lumens',
 };
 
-function isAccountNotFound(err: unknown): boolean {
-  const e = err as { name?: string; response?: { status?: number } };
-  return e?.name === 'NotFoundError' || e?.response?.status === 404;
-}
-
 /**
  * Load an account's holdings (native XLM + classic trustlines), each priced
  * best-effort. Native first. Shared by the assets list and the send-flow asset
@@ -44,9 +95,11 @@ export async function loadHoldings(address: string): Promise<Holding[]> {
   // balances (Friendbot XLM, trustlines) are the spendable side.
   let contractExtraXlm = 0;
   let effective = address;
-  if (StrKey.isValidContract(address)) {
-    contractExtraXlm = await fetchContractXlm(address);
-    const feePayer = await getFeePayerAddress();
+  const isContractWallet = StrKey.isValidContract(address);
+  const activity = isContractWallet ? await import('./activity') : null;
+  if (activity) {
+    contractExtraXlm = await activity.fetchContractXlm(address);
+    const feePayer = await activity.getFeePayerAddress();
     if (!feePayer) {
       return contractExtraXlm > 0
         ? [{ code: 'XLM', name: ASSET_NAMES['XLM']!, issuer: null, balance: contractExtraXlm.toFixed(7), usd: null, native: true }]
@@ -113,12 +166,12 @@ export async function loadHoldings(address: string): Promise<Holding[]> {
   // matter; now that they can, sending USDC from the fee payer into the
   // contract made 5 of 17 USDC vanish from the list, because the side holding
   // it was never read.
-  if (StrKey.isValidContract(address)) {
+  if (activity) {
     await Promise.all(
       rows
         .filter((r) => !r.native && r.issuer)
         .map(async (r) => {
-          const held = await fetchContractAssetBalance(address, {
+          const held = await activity.fetchContractAssetBalance(address, {
             code: r.code,
             issuer: r.issuer as string,
           });

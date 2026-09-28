@@ -1,5 +1,11 @@
 import { Asset, Networks, StrKey } from '@stellar/stellar-sdk'
-import { NETWORK, USDC_ISSUER, type StellarNetwork } from './network.js'
+import type { StellarNetwork } from './network.js'
+
+const configuredNetwork = (process.env.STELLAR_NETWORK ?? process.env.NEXT_PUBLIC_NETWORK)
+  ?.trim()
+  .toLowerCase()
+
+export const DEFAULT_NETWORK: StellarNetwork = configuredNetwork === 'testnet' ? 'testnet' : 'mainnet'
 
 /**
  * Assets the agent will vouch for, keyed by code and pinned by ISSUER.
@@ -16,37 +22,82 @@ export interface VerifiedAsset {
   /** Stellar Asset Contract id, only where it is pinned and asserted in tests. */
   sac?: string
   name: string
+  issuerName: string
+  homeDomain?: string
+  network: StellarNetwork
+  kind: 'treasury' | 'fund' | 'equity' | 'stablecoin' | 'native'
+  reserveXlm?: number
+  sacContractId?: string
   /** What the issuer can do to a holder, when the agent should say so. */
   issuerControls?: { clawback: boolean; freeze: boolean }
 }
 
-// Verified against mainnet Horizon on 2026-09-24 (issue #795). The SAC is
-// derived from the issuer in assets.test.ts rather than trusted as pasted.
+export type RegisteredAsset = VerifiedAsset
+export type AssetNetwork = StellarNetwork | 'all'
+
+export const USDY_MAINNET_ISSUER = 'GAJMPX5NBOG6TQFPQGRABJEEB2YE7RFRLUKJDZAZGAD5GFX4J7TADAZ6'
+export const USDC_MAINNET_ISSUER = 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
+export const USDC_TESTNET_ISSUER = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
 export const USDT0_MAINNET_ISSUER = 'GATISXX6BZ6NC7IKQBY37CJD4SOZL3CYZJWXEDG6JVIY4WBS6KXJHN6Q'
 export const USDT0_MAINNET_SAC = 'CBSJZEIO5C7KC2SF3MKSNXXJSW5G3VTNBX4ATMKUI3B2MR4JKM4R26YF'
-
-function USDC_ISSUER_FOR(network: StellarNetwork): string {
-  // network.ts holds the current network's USDC issuer; the other network's is fixed.
-  if (network === NETWORK) return USDC_ISSUER
-  return network === 'mainnet'
-    ? 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
-    : 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
-}
+export const NGNC_MAINNET_ISSUER = 'GASBV6W7GGED66MXEVC7YZHTWWYMSVYEY35USF2HJZBLABLYIFQGXZY6'
 
 const REGISTRY: Record<StellarNetwork, Record<string, VerifiedAsset>> = {
   mainnet: {
+    USDY: {
+      code: 'USDY',
+      issuer: USDY_MAINNET_ISSUER,
+      name: 'Ondo US Dollar Yield',
+      issuerName: 'Ondo Finance',
+      homeDomain: 'ondo.finance',
+      network: 'mainnet',
+      kind: 'treasury',
+      reserveXlm: 0.5,
+    },
     USDT0: {
       code: 'USDT0',
       issuer: USDT0_MAINNET_ISSUER,
       sac: USDT0_MAINNET_SAC,
+      sacContractId: USDT0_MAINNET_SAC,
       name: 'USDT0',
+      issuerName: 'Tether',
+      network: 'mainnet',
+      kind: 'stablecoin',
+      reserveXlm: 0.5,
       issuerControls: { clawback: true, freeze: true },
     },
-    USDC: { code: 'USDC', issuer: USDC_ISSUER_FOR('mainnet'), name: 'USD Coin' },
+    USDC: {
+      code: 'USDC',
+      issuer: USDC_MAINNET_ISSUER,
+      name: 'USD Coin',
+      issuerName: 'Circle',
+      homeDomain: 'circle.com',
+      network: 'mainnet',
+      kind: 'stablecoin',
+      reserveXlm: 0.5,
+    },
+    NGNC: {
+      code: 'NGNC',
+      issuer: NGNC_MAINNET_ISSUER,
+      name: 'Nigerian Naira',
+      issuerName: 'Link.io',
+      network: 'mainnet',
+      kind: 'stablecoin',
+      reserveXlm: 0.5,
+    },
   },
   // There is no verified USDT0 on testnet: any holding of that code is unverified.
   testnet: {
-    USDC: { code: 'USDC', issuer: USDC_ISSUER_FOR('testnet'), name: 'USD Coin' },
+    USDC: {
+      code: 'USDC',
+      issuer: USDC_TESTNET_ISSUER,
+      name: 'USD Coin',
+      issuerName: 'Circle',
+      homeDomain: 'circle.com',
+      network: 'testnet',
+      kind: 'stablecoin',
+      reserveXlm: 0.5,
+    },
   },
 }
 
@@ -69,9 +120,122 @@ export const ALL_REGISTERED_ASSETS: ReadonlyArray<{
   Object.values(REGISTRY[network]).map((asset) => ({ network, asset })),
 )
 
+/** Compatibility view for app consumers; values still come from REGISTRY. */
+export const ASSET_REGISTRY: Record<string, RegisteredAsset> = Object.fromEntries(
+  ALL_REGISTERED_ASSETS.flatMap(({ network, asset }) => [
+    [`${asset.code}:${network}`, asset],
+    ...(network === 'mainnet' ? [[asset.code, asset]] : []),
+  ]),
+)
+
 /** Registered entry for a code on this network, if any. */
-export function registeredAsset(code: string, network: StellarNetwork = NETWORK): VerifiedAsset | null {
+export function registeredAsset(code: string, network: StellarNetwork = DEFAULT_NETWORK): VerifiedAsset | null {
   return REGISTRY[network][code.trim().toUpperCase()] ?? null
+}
+
+export function getRegisteredAsset(
+  code: string,
+  issuerOrNetwork?: string,
+  network?: AssetNetwork,
+): RegisteredAsset | null {
+  const argumentIsNetwork = issuerOrNetwork === 'mainnet' || issuerOrNetwork === 'testnet' || issuerOrNetwork === 'all'
+  const issuer = argumentIsNetwork ? undefined : issuerOrNetwork
+  const requestedNetwork = network ?? (argumentIsNetwork ? issuerOrNetwork : 'mainnet')
+  const match = ALL_REGISTERED_ASSETS.find(({ network: candidateNetwork, asset }) =>
+    asset.code.toUpperCase() === code.trim().toUpperCase() &&
+    (!issuer || asset.issuer === issuer) &&
+    (requestedNetwork === 'all' || candidateNetwork === requestedNetwork),
+  )
+  return match?.asset ?? null
+}
+
+export function getAssetIssuer(code: string, network: StellarNetwork = 'mainnet'): string | null {
+  return registeredAsset(code, network)?.issuer ?? null
+}
+
+export function verifiedAsset(
+  code: string,
+  issuer: string | null | undefined,
+  network: StellarNetwork,
+): RegisteredAsset | null {
+  if (!issuer) return null
+  const registered = registeredAsset(code, network)
+  if (!registered || registered.code !== code || registered.issuer !== issuer) return null
+  return registered
+}
+
+export function isRegisteredIssuer(code: string, issuer: string, network?: AssetNetwork): boolean {
+  return ALL_REGISTERED_ASSETS.some(
+    ({ network: candidateNetwork, asset }) =>
+      asset.code.toUpperCase() === code.trim().toUpperCase() &&
+      asset.issuer === issuer &&
+      (!network || network === 'all' || candidateNetwork === network),
+  )
+}
+
+export interface HorizonIssuerFlags {
+  auth_required?: boolean
+  auth_revocable?: boolean
+  auth_clawback_enabled?: boolean
+  auth_immutable?: boolean
+}
+
+export function getAssetControlDisclosure(flags?: HorizonIssuerFlags | null): string | null {
+  if (!flags) return null
+  if (flags.auth_revocable && flags.auth_clawback_enabled) {
+    return 'The issuer can freeze this balance or take it back, and this is a property of the asset, not of Veil.'
+  }
+  if (flags.auth_clawback_enabled) {
+    return 'The issuer can take this balance back, and this is a property of the asset, not of Veil.'
+  }
+  if (flags.auth_revocable) {
+    return 'The issuer can freeze this balance, and this is a property of the asset, not of Veil.'
+  }
+  return null
+}
+
+export async function fetchIssuerFlags(
+  server: { loadAccount: (id: string) => Promise<any> },
+  issuer: string,
+): Promise<HorizonIssuerFlags | null> {
+  try {
+    const account = await server.loadAccount(issuer)
+    return (account?.flags as HorizonIssuerFlags) ?? null
+  } catch {
+    return null
+  }
+}
+
+export const KNOWN_SAC_CONTRACT_IDS: Record<'mainnet' | 'testnet', Record<string, string>> = {
+  mainnet: {
+    USDC: 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75',
+    USDT0: USDT0_MAINNET_SAC,
+  },
+  testnet: {
+    USDC: 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA',
+  },
+}
+
+export function sacContractIdForCode(code: string, network: StellarNetwork): string | null {
+  const asset = getRegisteredAsset(code, network)
+  if (!asset) return null
+  if (asset.sacContractId && network === 'mainnet') return asset.sacContractId
+  return KNOWN_SAC_CONTRACT_IDS[network][asset.code] ?? null
+}
+
+export const DISCLOSURE_UNAVAILABLE =
+  'Could not check whether this issuer can freeze or claw back this balance. Try again before adding a trustline.'
+
+export async function fetchAssetDisclosure(
+  server: { loadAccount: (id: string) => Promise<any> },
+  issuer: string,
+): Promise<string | null> {
+  try {
+    const account = await server.loadAccount(issuer)
+    return getAssetControlDisclosure((account?.flags as HorizonIssuerFlags) ?? null)
+  } catch {
+    return DISCLOSURE_UNAVAILABLE
+  }
 }
 
 export type HoldingStatus =
@@ -97,7 +261,7 @@ export function classifyHolding(
   code: string,
   issuer: string,
   balance: string,
-  network: StellarNetwork = NETWORK,
+  network: StellarNetwork = DEFAULT_NETWORK,
 ): Holding {
   const entry = registeredAsset(code, network)
   const upper = code.toUpperCase()
@@ -137,7 +301,7 @@ export function classifyHolding(
  * Turn the `CODE:ISSUER` entries of a getBalances() result into classified
  * holdings. XLM entries (no issuer) are skipped. Never matches on code alone.
  */
-export function classifyBalances(balances: Record<string, string>, network: StellarNetwork = NETWORK): Holding[] {
+export function classifyBalances(balances: Record<string, string>, network: StellarNetwork = DEFAULT_NETWORK): Holding[] {
   const holdings: Holding[] = []
   for (const [key, balance] of Object.entries(balances)) {
     const sep = key.indexOf(':')
@@ -164,7 +328,7 @@ export interface AssetAnswer {
  * it names the verified issuer and warns that the code alone proves nothing;
  * with an issuer it says whether that issuer is the registered one.
  */
-export function describeAsset(input: string, network: StellarNetwork = NETWORK): AssetAnswer {
+export function describeAsset(input: string, network: StellarNetwork = DEFAULT_NETWORK): AssetAnswer {
   const [rawCode, rawIssuer] = input.trim().split(':')
   const code = rawCode.trim()
   const entry = registeredAsset(code, network)

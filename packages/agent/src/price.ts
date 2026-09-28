@@ -1,6 +1,7 @@
 import { Asset } from '@stellar/stellar-sdk'
 import { SoroswapSDK, SupportedNetworks, SupportedProtocols, TradeType } from '@soroswap/sdk'
-import { HORIZON_URL, NETWORK, NETWORK_PASSPHRASE, USDC_ISSUER } from './network.js'
+import { getAssetIssuer } from './assets.js'
+import { HORIZON_URL, NETWORK, NETWORK_PASSPHRASE } from './network.js'
 
 /**
  * Asset prices, from the same place the Swap screen gets them.
@@ -32,7 +33,8 @@ export function resolveAsset(input: string): ResolvedAsset {
   const value = input.trim()
   const upper = value.toUpperCase()
   if (upper === 'XLM' || upper === 'NATIVE') return { horizon: 'native', label: 'XLM' }
-  if (upper === 'USDC') return { horizon: `USDC:${USDC_ISSUER}`, label: 'USDC' }
+  const registeredIssuer = getAssetIssuer(upper, NETWORK)
+  if (registeredIssuer) return { horizon: `${upper}:${registeredIssuer}`, label: upper }
 
   const [code, issuer] = value.split(':')
   if (code && issuer && /^G[A-Z2-7]{55}$/.test(issuer)) {

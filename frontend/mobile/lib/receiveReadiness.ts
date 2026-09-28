@@ -21,15 +21,12 @@
  */
 
 import { getNetwork, getNetworkName } from './network';
-
-/** Canonical USDC issuers. Mainnet is Circle's; testnet is the SDF test issuer. */
-const USDC_ISSUERS: Record<'mainnet' | 'testnet', string> = {
-  mainnet: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
-  testnet: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
-};
+import { getAssetIssuer } from '@veil/agent/assets';
 
 export function usdcIssuerFor(network: 'mainnet' | 'testnet'): string {
-  return USDC_ISSUERS[network];
+  const issuer = getAssetIssuer('USDC', network);
+  if (!issuer) throw new Error(`No USDC issuer is registered for ${network}.`);
+  return issuer;
 }
 
 export type ReceiveReadiness =
@@ -65,7 +62,7 @@ export async function checkReceiveReadiness(
 ): Promise<ReceiveReadiness> {
   const doFetch = opts.fetchImpl ?? fetch;
   const network = getNetworkName();
-  const issuer = USDC_ISSUERS[network];
+  const issuer = usdcIssuerFor(network);
   const url = `${getNetwork().horizonUrl.replace(/\/+$/, '')}/accounts/${encodeURIComponent(gAddress)}`;
 
   let res: Response;

@@ -1,4 +1,4 @@
-import { isRegisteredIssuer } from './assets'
+import { isRegisteredIssuer } from '@veil/agent/assets'
 import { getUsdcIssuer } from './network'
 
 const LENS_BASE_URL = process.env.NEXT_PUBLIC_LENS_URL ?? 'https://lens-ldtu.onrender.com'

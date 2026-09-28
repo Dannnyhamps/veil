@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
  * Origins the wallet reads a SEP-1 `stellar.toml` from.
  *
  * Every toml read goes through `loadRegisteredIssuerMetadata`, which refuses
- * any issuer outside `lib/assets.ts`'s ASSET_REGISTRY and then resolves that
+ * any issuer outside the shared asset registry and then resolves that
  * issuer's own `homeDomain` — so the set of domains is finite and known ahead
  * of time. Listed literally rather than imported because middleware runs in the
  * edge runtime and should not pull the asset registry (and the SDK types behind
@@ -61,9 +61,9 @@ export function middleware(request) {
       "https://relay.walletconnect.com",
       "wss://relay.walletconnect.com",
       // SEP-1 reads. `loadRegisteredIssuerMetadata` only ever resolves the
-      // `homeDomain` of an issuer already in ASSET_REGISTRY, so this set is
+      // `homeDomain` of an issuer already in the shared registry, so this set is
       // closed and known at build time — it is not an excuse for a bare
-      // `https:`. Keep it in step with lib/assets.ts; lib/__tests__/csp.test.ts
+      // `https:`. Keep it in step with the registry; lib/__tests__/csp.test.ts
       // fails if a registered homeDomain is missing here, because the symptom
       // otherwise is silently missing issuer names rather than an error.
       ...REGISTERED_ISSUER_ORIGINS,

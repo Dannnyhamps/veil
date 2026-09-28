@@ -20,10 +20,13 @@
  * and the policy is a literal string there, so the source is the thing to pin.
  */
 
+import { TextDecoder, TextEncoder } from 'util'
+Object.assign(globalThis, { TextEncoder, TextDecoder })
+
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-import { ASSET_REGISTRY } from '../assets'
+import { ASSET_REGISTRY } from '@veil/agent/assets'
 
 const source = readFileSync(join(__dirname, '..', '..', 'middleware.js'), 'utf8')
 

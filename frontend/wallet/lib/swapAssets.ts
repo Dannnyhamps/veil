@@ -15,7 +15,7 @@
  */
 
 import { Asset, StrKey } from '@stellar/stellar-sdk'
-import { ASSET_REGISTRY, getAssetIssuer, isRegisteredIssuer, type RegisteredAsset } from './assets'
+import { ASSET_REGISTRY, getAssetIssuer, isRegisteredIssuer, type RegisteredAsset } from '@veil/agent/assets'
 
 export type NetworkName = 'mainnet' | 'testnet'
 

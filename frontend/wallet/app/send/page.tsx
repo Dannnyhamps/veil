@@ -21,7 +21,7 @@ import { readPaymentRequest, resolveRequestedAsset, type IssuedAsset } from '@/l
 // memo so the submit path builds the right Stellar Memo instead of assuming
 // text.
 import { buildStellarMemo, validateMemo } from '@/lib/sep7'
-import { getRegisteredAsset } from '@/lib/assets'
+import { getRegisteredAsset } from '@veil/agent/assets'
 import { buildSep7Memo, type Sep7MemoType } from '@/lib/sep7'
 import { passkeyErrorMessage } from '@/lib/passkeyAuth'
 import { validateMemoText } from '@/lib/memo'

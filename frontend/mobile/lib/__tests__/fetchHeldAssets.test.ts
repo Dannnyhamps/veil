@@ -27,7 +27,7 @@ jest.mock('@stellar/stellar-sdk', () => {
 });
 
 import { Horizon } from '@stellar/stellar-sdk';
-import { fetchHeldAssets } from '../assets';
+import { fetchHeldAssets } from '../holdings';
 import { getNetwork } from '../network';
 
 const mockGetNetwork = getNetwork as jest.MockedFunction<typeof getNetwork>;

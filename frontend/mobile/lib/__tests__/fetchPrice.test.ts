@@ -75,7 +75,7 @@ describe('fetchPrice', () => {
   });
 
   it('prices verified USDT0 as 1.0 (dollar stablecoin) without hitting the network', async () => {
-    const { USDT0_MAINNET_ISSUER } = require('../assets');
+    const { USDT0_MAINNET_ISSUER } = require('@veil/agent/assets');
     const spy = jest.fn();
     global.fetch = spy as unknown as typeof fetch;
     await expect(fetchPrice('USDT0', USDT0_MAINNET_ISSUER)).resolves.toBe(1.0);

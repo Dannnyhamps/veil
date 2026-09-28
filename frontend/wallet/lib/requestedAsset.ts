@@ -8,14 +8,14 @@
  * recognises, and refused, with the reason in words, whenever it is not. It is
  * never resolved by guessing the issuer from the code.
  *
- * Recognised means: listed in the verified registry (`lib/assets.ts`) for the
+ * Recognised means: listed in the shared verified registry for the
  * active network, or — for a code the registry does not know at all — an asset
  * the wallet already holds a trustline to. A code the registry *does* know is
  * held to the registry: holding an impostor's trustline does not launder it.
  */
 
 import { StrKey } from '@stellar/stellar-sdk'
-import { ASSET_REGISTRY, getRegisteredAsset, isRegisteredIssuer } from './assets'
+import { ASSET_REGISTRY, getRegisteredAsset, isRegisteredIssuer } from '@veil/agent/assets'
 import { parseScannedValue, Sep7Error, type PrefilledSend } from './paymentRequest'
 
 export type NetworkName = 'mainnet' | 'testnet'

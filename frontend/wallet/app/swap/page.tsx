@@ -22,7 +22,7 @@ import {
   swapRouteInput,
   type SwapAsset,
 } from '@/lib/swapAssets'
-import { getAssetIssuer } from '@/lib/assets'
+import { getAssetIssuer } from '@veil/agent/assets'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {

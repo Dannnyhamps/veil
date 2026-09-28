@@ -14,7 +14,7 @@ import {
   TRUSTLINE_RESERVE_COST_XLM,
   TRUSTLINE_TX_FEE_BUFFER_XLM,
 } from '../reserves';
-import { USDY_MAINNET_ISSUER, getRegisteredAsset, isRegisteredIssuer } from '../assets';
+import { USDY_MAINNET_ISSUER, getRegisteredAsset, isRegisteredIssuer } from '@veil/agent/assets';
 
 describe('Asset Registry for USDY & USDC', () => {
   it('verifies USDY issuer against the registry (GAJMPX5NBOG6TQFPQGRABJEEB2YE7RFRLUKJDZAZGAD5GFX4J7TADAZ6)', () => {

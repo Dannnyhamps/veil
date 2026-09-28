@@ -33,6 +33,7 @@
 import { Asset, BASE_FEE, Horizon, Keypair, Networks, Operation, TransactionBuilder } from '@stellar/stellar-sdk'
 
 import { decideSponsorship, planSponsorship, type AccountSnapshot } from '@/lib/sponsorship'
+import { getAssetIssuer } from '@veil/agent/assets'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -54,9 +55,9 @@ function networkConfig(network: string) {
 
 /** Canonical USDC issuer per network. Mainnet is Circle's; they are different assets. */
 function usdcIssuer(network: string): string {
-  return network === 'mainnet'
-    ? 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
-    : 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
+  const issuer = getAssetIssuer('USDC', network === 'mainnet' ? 'mainnet' : 'testnet')
+  if (!issuer) throw new Error(`No USDC issuer is registered for ${network}.`)
+  return issuer
 }
 
 function json(body: unknown, status: number) {

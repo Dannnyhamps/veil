@@ -33,7 +33,7 @@ import { Amount, Row, TokenIcon } from '@/components/ui/primitives'
 import { formatFiat, hydrateCurrency, useCurrency } from '@/lib/currency'
 import { useActivityFeed, initActivityFeed, hydrateActivityFeed, appendActivityFeed } from '@/lib/activityFeed'
 import { loadBlendPositions, type BlendPosition } from '@/lib/blend'
-import { KNOWN_SAC_CONTRACT_IDS, getAssetIssuer } from '@/lib/assets'
+import { KNOWN_SAC_CONTRACT_IDS, getAssetIssuer } from '@veil/agent/assets'
 import { buildPortfolio } from '@/lib/portfolio'
 import { PortfolioSummary } from '@/components/PortfolioSummary'
 

@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../hooks/useTheme';
 import type { ThemeColors } from '../lib/theme';
-import { verifiedAsset, type HeldAsset } from '../lib/assets';
+import { verifiedAsset } from '@veil/agent/assets';
+import type { HeldAsset } from '../lib/holdings';
 import { getNetworkName } from '../lib/network';
 import { truncateAddress } from './ui/AddressChip';
 

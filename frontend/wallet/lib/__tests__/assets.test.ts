@@ -14,7 +14,7 @@ import {
   fetchAssetDisclosure,
   fetchIssuerFlags,
   DISCLOSURE_UNAVAILABLE,
-} from '../assets'
+} from '@veil/agent/assets'
 
 describe('Verified Asset Registry - USDT0 (Issue #787)', () => {
   it('USDT0 resolves to exactly the pinned issuer on mainnet', () => {

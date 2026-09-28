@@ -3,7 +3,7 @@ import { TextEncoder, TextDecoder } from 'util'
 Object.assign(globalThis, { TextEncoder, TextDecoder })
 
 import { fetchPrice, usdValue } from '../fetchPrice'
-import { USDT0_MAINNET_ISSUER } from '../assets'
+import { USDT0_MAINNET_ISSUER } from '@veil/agent/assets'
 
 describe('wallet fetchPrice - USDT0 & dollar stablecoins (Issue #790)', () => {
   const realFetch = global.fetch

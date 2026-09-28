@@ -12,7 +12,7 @@
  */
 
 import { StrKey } from '@stellar/stellar-sdk';
-import { ASSET_REGISTRY, getRegisteredAsset, isRegisteredIssuer } from './assets';
+import { ASSET_REGISTRY, getRegisteredAsset, isRegisteredIssuer } from '@veil/agent/assets';
 
 export type IssuedAsset = { code: string; issuer: string };
 
