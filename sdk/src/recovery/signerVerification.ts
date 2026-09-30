@@ -8,19 +8,9 @@ import {
     rpc as SorobanRpc,
 } from '@stellar/stellar-sdk';
 import { derToRawSignature, bufferToHex, hexToUint8Array } from '../utils';
-
-export type RegisteredSigner = Uint8Array | string;
-
-function signerBytes(value: RegisteredSigner): Uint8Array {
-    if (value instanceof Uint8Array) return value;
-    return hexToUint8Array(value);
-}
-
-/** The single rule used by web and mobile recovery: the key must be registered. */
-export function isRegisteredSigner(signers: RegisteredSigner[], publicKey: RegisteredSigner): boolean {
-    const target = bufferToHex(signerBytes(publicKey)).toLowerCase();
-    return signers.some((signer) => bufferToHex(signerBytes(signer)).toLowerCase() === target);
-}
+import { isRegisteredSigner, type RegisteredSigner } from './signerRegistry';
+export { isRegisteredSigner } from './signerRegistry';
+export type { RegisteredSigner } from './signerRegistry';
 
 export type WebAuthnAssertion = {
     authenticatorData: ArrayBuffer | Uint8Array;
@@ -55,7 +45,7 @@ export async function matchWebAuthnSigner(
     );
 
     for (const signer of signers) {
-        const publicKey = signerBytes(signer);
+        const publicKey = signer instanceof Uint8Array ? signer : hexToUint8Array(signer);
         try {
             const cryptoKey = await crypto.subtle.importKey(
                 'raw',

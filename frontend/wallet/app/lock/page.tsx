@@ -350,6 +350,9 @@ export default function LockPage() {
             >
               Your biometric is your key — no password needed.
             </p>
+            <button type="button" className="btn-ghost" onClick={() => router.push("/sign-in")}>
+              Sign in with another address or backup
+            </button>
           </div>
         </main>
       </div>

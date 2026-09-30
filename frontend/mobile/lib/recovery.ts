@@ -19,7 +19,7 @@ import type * as PasskeysModule from 'react-native-passkeys';
 import { getNetwork, type VeilNetwork } from './network';
 import { setPasskeyCredential, setWalletAddress } from './walletStore';
 import { base64UrlToUint8Array, uint8ArrayToBase64Url } from './webauthn';
-import { isRegisteredSigner } from '../../../sdk/src/recovery/signerVerification';
+import { isRegisteredSigner } from '../../../sdk/src/recovery/signerRegistry';
 
 let cachedPasskeys: typeof PasskeysModule | null | undefined;
 function passkeys(): typeof PasskeysModule {

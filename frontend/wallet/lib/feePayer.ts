@@ -46,6 +46,13 @@ const DIAGNOSTICS = 'veil_feepayer_diagnostics'
  */
 export type FeePayerMode = 'prf-raw' | 'prf-hkdf' | 'legacy'
 
+export class FeePayerConflictError extends Error {
+  constructor() {
+    super('A fee-payer for a different wallet is already stored in this browser.')
+    this.name = 'FeePayerConflictError'
+  }
+}
+
 /** Outcome of one candidate's on-chain existence probe (see {@link pickFundedCandidate}). */
 export type FeePayerProbeStatus = 'exists' | 'not-found' | 'network-error' | 'not-probed'
 
@@ -293,12 +300,21 @@ export async function ensureFeePayer(evaluator?: PrfEvaluator): Promise<Keypair 
 export async function establishRecoveredFeePayer(
   prf?: Uint8Array | null,
   recoveredCredentialId?: string,
+  replaceExisting = false,
+  recoveredKeypair?: Keypair,
 ): Promise<Keypair> {
   const existing = peekFeePayerSecret()
   if (existing) {
-    const keypair = Keypair.fromSecret(existing)
-    cached = keypair
-    return keypair
+    const storedCredentialId = walletLocal.getItem(KEY_ID)
+    if (!replaceExisting) {
+      if (!storedCredentialId || !recoveredCredentialId || storedCredentialId !== recoveredCredentialId) {
+        throw new FeePayerConflictError()
+      }
+      const keypair = Keypair.fromSecret(existing)
+      cached = keypair
+      return keypair
+    }
+    resetFeePayer()
   }
 
   const credentialId = recoveredCredentialId ?? walletLocal.getItem(KEY_ID)
@@ -306,7 +322,10 @@ export async function establishRecoveredFeePayer(
   let mode: FeePayerMode
   let keypair: Keypair
 
-  if (pinned === 'prf-raw' && prf && prf.length >= 32) {
+  if (recoveredKeypair) {
+    mode = 'legacy'
+    keypair = recoveredKeypair
+  } else if (pinned === 'prf-raw' && prf && prf.length >= 32) {
     mode = 'prf-raw'
     keypair = Keypair.fromRawEd25519Seed(Buffer.from(prf.subarray(0, 32)))
   } else if (pinned === 'prf-hkdf' && prf && prf.length >= 32) {

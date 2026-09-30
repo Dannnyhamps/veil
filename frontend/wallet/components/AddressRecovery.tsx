@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle } from 'lucide-react'
 import { decryptBackup, deserializeBackup, type WalletBackupMetadata } from '@veil/backup'
 import { matchWebAuthnSigner, recoverWalletByAddress } from '@veil/sdk/recovery/signerVerification'
 import { FEE_PAYER_PRF_SALT } from '@veil/prf'
 import { persistRestoredState } from '@/lib/backup'
-import { establishRecoveredFeePayer } from '@/lib/feePayer'
+import { establishRecoveredFeePayer, FeePayerConflictError } from '@/lib/feePayer'
 import { getNetwork } from '@/lib/network'
 import { walletLocal, walletSession } from '@/lib/walletStorage'
 import { NetworkSwitcher } from '@/components/NetworkSwitcher'
@@ -55,33 +55,33 @@ export function AddressRecovery() {
   const [passphrase, setPassphrase] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmFeePayerReplacement, setConfirmFeePayerReplacement] = useState(false)
+  const [pendingBackup, setPendingBackup] = useState<WalletBackupMetadata | undefined>(undefined)
 
-  useEffect(() => {
-    if (walletLocal.getItem('invisible_wallet_address')) router.replace('/lock')
-  }, [router])
-
-  async function recover(backup?: WalletBackupMetadata) {
+  async function recover(backup?: WalletBackupMetadata, replaceFeePayer = false) {
     const selectedAddress = backup?.address ?? address.trim()
     setError(null)
+    setConfirmFeePayerReplacement(false)
     setBusy(true)
     try {
       const network = getNetwork()
       if (backup?.networkPassphrase && backup.networkPassphrase !== network.networkPassphrase) {
         throw new Error('This backup belongs to a different Stellar network. Switch networks and try again.')
       }
-      let assertion: DiscoveredAssertion | null = null
+      const assertionRef = { value: null as DiscoveredAssertion | null }
       const result = await recoverWalletByAddress(selectedAddress, {
         rpcUrl: network.rpcUrl,
         networkPassphrase: network.networkPassphrase,
         authenticate: async (signers) => {
-          assertion = await getAssertion()
-          if (!assertion) throw new Error('Passkey prompt was cancelled.')
-          return matchWebAuthnSigner(signers, assertion)
+          assertionRef.value = await getAssertion()
+          if (!assertionRef.value) throw new Error('Passkey prompt was cancelled.')
+          return matchWebAuthnSigner(signers, assertionRef.value)
         },
       })
+      const assertion = assertionRef.value
       if (!assertion) throw new Error('Passkey prompt was cancelled.')
 
-      await establishRecoveredFeePayer(assertion.prf, assertion.credentialId)
+      await establishRecoveredFeePayer(assertion.prf, assertion.credentialId, replaceFeePayer)
       if (backup) await persistRestoredState(backup)
       walletLocal.setItem('invisible_wallet_address', result.address)
       walletLocal.setItem('invisible_wallet_key_id', assertion.credentialId)
@@ -90,6 +90,12 @@ export function AddressRecovery() {
       setPassphrase('')
       router.replace('/dashboard')
     } catch (cause) {
+      if (cause instanceof FeePayerConflictError) {
+        setPendingBackup(backup)
+        setError('A fee-payer from another wallet is stored in this browser. Replacing it removes that secret here and may make its funds inaccessible without another backup.')
+        setConfirmFeePayerReplacement(true)
+        return
+      }
       setError(cause instanceof Error ? cause.message : String(cause))
     } finally {
       setBusy(false)
@@ -125,6 +131,11 @@ export function AddressRecovery() {
               <AlertCircle size={17} />
               <span>{error}</span>
             </div>
+          )}
+          {confirmFeePayerReplacement && (
+            <button className="btn-secondary" type="button" onClick={() => void recover(pendingBackup, true)} disabled={busy}>
+              Confirm replacement and verify again
+            </button>
           )}
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             Wallet address

@@ -118,17 +118,18 @@ export async function loginWithPasskey(): Promise<LoginResult> {
 
 /** Recover by a supplied wallet address using the shared validate/resolve/verify sequence. */
 export async function loginWithAddress(address: string): Promise<LoginResult> {
-  let picked: Awaited<ReturnType<typeof discoverPasskeyAssertion>> = null;
+  const pickedRef = { value: null as Awaited<ReturnType<typeof discoverPasskeyAssertion>> };
   const network = getNetwork();
   const result = await recoverWalletByAddress(address, {
     rpcUrl: network.rpcUrl,
     networkPassphrase: network.networkPassphrase,
     authenticate: async (signers) => {
-      picked = await discoverPasskeyAssertion(FEE_PAYER_PRF_SALT);
-      if (!picked) throw new Error('Passkey prompt was cancelled.');
-      return matchWebAuthnSigner(signers, picked);
+      pickedRef.value = await discoverPasskeyAssertion(FEE_PAYER_PRF_SALT);
+      if (!pickedRef.value) throw new Error('Passkey prompt was cancelled.');
+      return matchWebAuthnSigner(signers, pickedRef.value);
     },
   });
+  const picked = pickedRef.value;
   if (!picked) throw new Error('Passkey sign-in was cancelled.');
 
   const networkSuffix = getNetworkName() === 'mainnet' ? '_mainnet' : '';
