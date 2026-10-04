@@ -1,4 +1,5 @@
-import { recoverWalletByAddress, WalletContractNotFoundError } from '../../../../sdk/src/recovery/signerVerification';
+import { recoverWalletByAddress } from '../../../../sdk/src/recovery/signerVerification';
+import { WalletContractNotFoundError } from '../../../../sdk/src/recovery/signerErrors';
 import { ADDRESS_RECOVERY_CASES } from '../../../../sdk/tests/fixtures/addressRecoveryCases';
 
 const REGISTERED = '04' + '11'.repeat(64);

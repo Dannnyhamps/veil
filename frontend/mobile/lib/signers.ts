@@ -22,7 +22,8 @@ import {
 } from '@stellar/stellar-sdk';
 
 import { getNetwork } from './network';
-import { NotVeilWalletError, WalletContractNotFoundError } from '../../../sdk/src/recovery/signerVerification';
+import { NotVeilWalletError, WalletContractNotFoundError } from '../../../sdk/src/recovery/signerErrors';
+export { WalletContractNotFoundError } from '../../../sdk/src/recovery/signerErrors';
 
 export type WalletSigner = {
   /** The signer's slot in the contract's signer map. */
@@ -33,22 +34,6 @@ export type WalletSigner = {
 
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Raised by {@link readSigners} when the RPC answered but no `get_signers`
- * instance exists at the address. Distinct from the network being unreachable,
- * which surfaces as whatever the RPC threw instead — callers catch this type
- * to tell the two apart.
- */
-export class WalletContractNotFoundError extends Error {
-  readonly contractAddress: string;
-
-  constructor(contractAddress: string) {
-    super(`No wallet contract is deployed at ${contractAddress} on this network.`);
-    this.name = 'WalletContractNotFoundError';
-    this.contractAddress = contractAddress;
-  }
 }
 
 /**
@@ -84,12 +69,10 @@ export async function readSigners(contractAddress: string): Promise<WalletSigner
 
   const sim = await server.simulateTransaction(tx);
   if (SorobanRpc.Api.isSimulationError(sim)) {
-    if (/not found|contract instance/i.test(sim.error)) throw new WalletContractNotFoundError(contractAddress);
-    throw new NotVeilWalletError();
     if (CONTRACT_MISSING_RE.test(sim.error)) {
       throw new WalletContractNotFoundError(contractAddress);
     }
-    throw new Error(sim.error);
+    throw new NotVeilWalletError();
   }
 
   const result = (sim as SorobanRpc.Api.SimulateTransactionSuccessResponse).result;
