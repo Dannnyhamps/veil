@@ -22,7 +22,8 @@ import {
 } from '@stellar/stellar-sdk';
 
 import { getNetwork } from './network';
-import { NotVeilWalletError, WalletContractNotFoundError } from '../../../sdk/src/recovery/signerVerification';
+import { NotVeilWalletError, WalletContractNotFoundError } from '../../../sdk/src/recovery/signerErrors';
+export { WalletContractNotFoundError } from '../../../sdk/src/recovery/signerErrors';
 
 export type WalletSigner = {
   /** The signer's slot in the contract's signer map. */
@@ -36,10 +37,20 @@ function toHex(bytes: Uint8Array): string {
 }
 
 /**
+ * Simulation diagnostics that mean "there is no contract here" rather than
+ * "the call failed". Anything else coming back as a simulation error is left
+ * to the caller to show — and a thrown fetch/SDK failure is not even this, so
+ * network trouble never reads as a missing wallet.
+ */
+const CONTRACT_MISSING_RE = /MissingValue|not found|does not exist|no such|missing contract|contract wasm/i;
+
+/**
  * The signers registered on a wallet contract, lowest index first.
  *
- * Throws when the contract cannot be reached or is not deployed — callers
- * should check deployment first so they can say which of the two it was.
+ * Throws {@link WalletContractNotFoundError} when the contract is not deployed,
+ * and whatever the RPC layer throws when the network is unreachable — callers
+ * catch the former to say "no wallet here" and anything else to say "couldn't
+ * reach the network".
  */
 export async function readSigners(contractAddress: string): Promise<WalletSigner[]> {
   const network = getNetwork();
@@ -58,7 +69,9 @@ export async function readSigners(contractAddress: string): Promise<WalletSigner
 
   const sim = await server.simulateTransaction(tx);
   if (SorobanRpc.Api.isSimulationError(sim)) {
-    if (/not found|contract instance/i.test(sim.error)) throw new WalletContractNotFoundError(contractAddress);
+    if (CONTRACT_MISSING_RE.test(sim.error)) {
+      throw new WalletContractNotFoundError(contractAddress);
+    }
     throw new NotVeilWalletError();
   }
 
