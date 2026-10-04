@@ -18,8 +18,11 @@ const IN_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.Store
  * Sign in with an existing wallet. The headline path is the passkey: one
  * fingerprint re-derives the fee-payer (PRF) and reads the on-chain
  * breadcrumbs, restoring the wallet even on a brand-new phone — as long as the
- * passkey itself synced (Google Password Manager / iCloud Keychain). The
- * recovery-server flow and raw-key import remain as fallbacks.
+ * passkey itself synced (Google Password Manager / iCloud Keychain). A wallet
+ * address is an equally valid way in: its signer set is public, so anyone who
+ * knows the address can prove possession of a registered passkey against it —
+ * no PRF required. The recovery-server flow and raw-key import remain as
+ * fallbacks.
  */
 export default function LoginScreen() {
   const router = useRouter();
@@ -29,6 +32,8 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState('');
+  const [showAddress, setShowAddress] = useState(false);
+  const [address, setAddress] = useState('');
 
   const handlePasskeyLogin = async () => {
     setBusy(true);
@@ -50,6 +55,9 @@ export default function LoginScreen() {
     try {
       await loginWithAddress(walletAddress);
       router.replace('/dashboard');
+      const result = await loginWithAddress(address);
+      router.replace('/dashboard');
+      void result;
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -110,6 +118,47 @@ export default function LoginScreen() {
         >
           {busy ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.ctaSecondaryText}>Sign in with address</Text>}
         </Pressable>
+
+        <Pressable
+          testID="login-address-toggle"
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={() => setShowAddress((v) => !v)}
+          style={styles.linkBtn}
+        >
+          <Text style={styles.link}>{showAddress ? 'Hide address login' : 'I know my wallet address'}</Text>
+        </Pressable>
+
+        {showAddress && (
+          <View style={styles.card}>
+            <TextInput
+              testID="login-address-input"
+              style={styles.input}
+              value={address}
+              onChangeText={setAddress}
+              placeholder="C… (56 characters)"
+              placeholderTextColor={colors.textFaint}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              autoComplete="off"
+              editable={!busy}
+              onSubmitEditing={handleAddressLogin}
+            />
+            <Pressable
+              testID="login-address-submit"
+              accessibilityRole="button"
+              disabled={busy || address.trim().length === 0}
+              onPress={handleAddressLogin}
+              style={({ pressed }) => [styles.ctaSecondary, (busy || address.trim().length === 0) && styles.disabled, pressed && styles.pressed]}
+            >
+              {busy ? (
+                <ActivityIndicator color={colors.textPrimary} />
+              ) : (
+                <Text style={styles.ctaSecondaryText}>Sign in</Text>
+              )}
+            </Pressable>
+          </View>
+        )}
 
         <Pressable accessibilityRole="button" onPress={() => router.push('/recover')} style={styles.linkBtn}>
           <Text style={styles.link}>Lost your passkey? Recover with servers</Text>
@@ -175,6 +224,24 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: 15,
     },
     ctaSecondaryText: { color: colors.accent, fontFamily: fontFamily.bodySemiBold, fontSize: 14 },
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 13,
+    },
+    input: { color: colors.textPrimary, fontFamily: fontFamily.address, fontSize: 14, padding: 0 },
+    ctaSecondary: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 100,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 12,
+    },
+    ctaSecondaryText: { color: colors.textPrimary, fontFamily: fontFamily.bodyMedium, fontSize: 14 },
     linkBtn: { alignItems: 'center', paddingVertical: 13 },
     link: { color: colors.accent, fontFamily: fontFamily.bodyMedium, fontSize: 14 },
     linkMuted: { color: colors.textMuted, fontFamily: fontFamily.body, fontSize: 13 },

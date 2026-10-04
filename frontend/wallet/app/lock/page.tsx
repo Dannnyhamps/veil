@@ -206,6 +206,9 @@ export default function LockPage() {
         <div style={{ width: "100%", maxWidth: 260, margin: "0 auto 1.75rem" }}>
           <NetworkSwitcher />
         </div>
+      <div style={{ maxWidth: 400, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2.5rem' }}>
+        {/* The switcher must sit inside a landmark (axe "region" rule), so it
+            lives inside the main below rather than above it. */}
 
         <header
           style={{
@@ -236,6 +239,15 @@ export default function LockPage() {
             alignItems: "center",
             padding: "2rem 1.25rem",
           }}
+       
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem 1.25rem' }}>
+        <div style={{ width: '100%', maxWidth: 260, margin: '0 auto 1.75rem' }}>
+          <NetworkSwitcher />
+        </div>
+        {/* Lock card */}
+        <div
+          className="card"
+          style={{ maxWidth:400, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2.5rem'}}
         >
           {/* Lock card */}
           <div
